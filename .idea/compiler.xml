@@ -6,8 +6,10 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
-        <module name="persistent_data_structures" />
       </profile>
     </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="persistent-data-structures" target="17" />
+    </bytecodeTargetLevel>
   </component>
 </project>
