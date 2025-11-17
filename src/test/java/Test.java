@@ -1,11 +1,12 @@
 import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class CalculatorTest {
 
     @Test
     void sumWorks() {
         int result = 2 + 2;
-        assertEquals(4, result);
+        int expected = 4;
+        assertEquals(expected, result);
     }
 }

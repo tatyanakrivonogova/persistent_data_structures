@@ -43,3 +43,5 @@ jobs:
           VALIDATE_ALL_CODEBASE: false
           DEFAULT_BRANCH: "master"
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VALIDATE_CHECKSTYLE: true
+          CHECKSTYLE_CONFIG_FILE: checkstyle.xml
