@@ -56,6 +56,73 @@ public class PersistentBinaryTree<T extends Comparable<T>> extends AbstractPersi
         this.elements = Collections.unmodifiableList(new ArrayList<>(elements));
     }
     
+    /**
+     * {@inheritDoc}
+     * Returns the element at the specified position in in-order traversal order.
+     * 
+     * @param index the index of the element to return
+     * @return the element at the specified position
+     * @throws IndexOutOfBoundsException if the index is out of range
+     */
+    @Override
+    public T get(int index) {
+        if (index < 0 || index >= size) {
+            throw new IndexOutOfBoundsException("Index: " + index + ", Size: " + size);
+        }
+        return elements.get(index);
+    }
+    
+    /**
+     * {@inheritDoc}
+     * 
+     * @return the number of elements in this binary tree
+     */
+    @Override
+    public int size() {
+        return size;
+    }
+    
+    /**
+     * {@inheritDoc}
+     * Returns an iterator over the elements in this tree in in-order traversal sequence.
+     * 
+     * @return an iterator over the elements in this tree
+     */
+    @Override
+    public Iterator<T> iterator() {
+        return elements.iterator();
+    }
+    
+    // Additional tree-specific methods that maintain the API
+    
+    /**
+     * Checks if the tree contains the specified value.
+     * This method provides efficient O(log n) search in the balanced binary tree.
+     * 
+     * @param value the value to search for
+     * @return true if the tree contains the value, false otherwise
+     */
+    public boolean contains(T value) {
+        return contains(root, value);
+    }
+    
+    private boolean contains(BinaryTreeNode<T> node, T value) {
+        if (node == null) return false;
+        
+        int cmp = value.compareTo(node.getValue());
+        if (cmp < 0) return contains(node.getLeft(), value);
+        if (cmp > 0) return contains(node.getRight(), value);
+        return true;
+    }
+    
+    private void inOrderTraversal(BinaryTreeNode<T> node, Consumer<T> action) {
+        if (node != null) {
+            inOrderTraversal(node.getLeft(), action);
+            action.accept(node.getValue());
+            inOrderTraversal(node.getRight(), action);
+        }
+    }
+    
     @Override
     public String toString() {
         return "PersistentBinaryTree" + elements.toString();
