@@ -1,7 +1,12 @@
 package persistent.structures;
 
 import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -162,7 +167,8 @@ class PersistentBinaryTreeTest {
 
     @Test
     void testPersistence() {
-        PersistentBinaryTree<Integer> original = new PersistentBinaryTree<Integer>()
+        PersistentBinaryTree<Integer> original = 
+            new PersistentBinaryTree<Integer>()
             .insert(1)
             .insert(2)
             .insert(3);
@@ -199,7 +205,7 @@ class PersistentBinaryTreeTest {
             .insert(35)
             .remove(70)
             .insert(75);
-        
+
         assertEquals(7, tree.size());
         assertEquals(7, result.size());
         assertFalse(result.contains(30));
@@ -333,18 +339,20 @@ class PersistentBinaryTreeTest {
     void testTreeWithCustomComparable() {
         // Test with a custom Comparable class
         class Name implements Comparable<Name> {
-            final private String firstName;
-            final private String lastName;
+            private final String firstName;
+            private final String lastName;
 
-            Name(final String firstName, final String lastName) {
-                this.firstName = firstName;
-                this.lastName = lastName;
+            Name(final String firstNameValue, final String lastNameValue) {
+                this.firstName = firstNameValue;
+                this.lastName = lastNameValue;
             }
 
             @Override
             public int compareTo(final Name other) {
                 int lastCompare = lastName.compareTo(other.lastName);
-                if (lastCompare != 0) return lastCompare;
+                if (lastCompare != 0) {
+                    return lastCompare;
+                }
                 return firstName.compareTo(other.firstName);
             }
 
