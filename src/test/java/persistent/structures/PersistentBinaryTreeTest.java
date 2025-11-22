@@ -167,7 +167,7 @@ class PersistentBinaryTreeTest {
 
     @Test
     void testPersistence() {
-        PersistentBinaryTree<Integer> original = 
+        PersistentBinaryTree<Integer> original =
             new PersistentBinaryTree<Integer>()
             .insert(1)
             .insert(2)
