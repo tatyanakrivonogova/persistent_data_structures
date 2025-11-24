@@ -19,9 +19,16 @@ import java.util.function.Consumer;
  * @param <T> the type of elements in this tree, must be Comparable
  * @version 1.0
  */
-public class PersistentBinaryTree<T extends Comparable<T>> 
+public class PersistentBinaryTree<T extends Comparable<T>>
         extends AbstractPersistentStructure<T> {
+    /**
+     * The root node of the binary tree.
+     */
     private final BinaryTreeNode<T> root;
+    
+    /**
+     * The number of elements in the binary tree.
+     */
     private final int size;
 
     /**
@@ -34,10 +41,14 @@ public class PersistentBinaryTree<T extends Comparable<T>>
     }
 
     /**
-     * Private constructor for creating 
-     * new versions of the tree.
+     * Private constructor for creating new versions of the tree.
+     * 
+     * @param rootValue the root node of the tree
+     * @param sizeValue the size of the tree
+     * @param version the version identifier for this tree instance
      */
-    private PersistentBinaryTree(final BinaryTreeNode<T> rootValue, final int sizeValue, final Version version) {
+    private PersistentBinaryTree(final BinaryTreeNode<T> rootValue, 
+        final int sizeValue, final Version version) {
         super(version);
         this.root = rootValue;
         this.size = sizeValue;
@@ -177,7 +188,8 @@ public class PersistentBinaryTree<T extends Comparable<T>>
         return inOrderList().iterator();
     }
 
-    private BinaryTreeNode<T> insert(final BinaryTreeNode<T> node, final T value) {
+    private BinaryTreeNode<T> insert(final BinaryTreeNode<T> node,
+        final T value) {
         if (node == null) {
             return new BinaryTreeNode<>(value, null, null);
         }
@@ -203,7 +215,8 @@ public class PersistentBinaryTree<T extends Comparable<T>>
         }
     }
 
-    private BinaryTreeNode<T> remove(final BinaryTreeNode<T> node, final T value) {
+    private BinaryTreeNode<T> remove(final BinaryTreeNode<T> node,
+        final T value) {
         if (node == null) {
             return null;
         }
@@ -356,7 +369,8 @@ public class PersistentBinaryTree<T extends Comparable<T>>
         return isBalanced(node.getLeft()) && isBalanced(node.getRight());
     }
 
-    private void inOrderTraversal(final BinaryTreeNode<T> node, final Consumer<T> action) {
+    private void inOrderTraversal(final BinaryTreeNode<T> node,
+        final Consumer<T> action) {
         if (node != null) {
             inOrderTraversal(node.getLeft(), action);
             action.accept(node.getValue());
@@ -364,7 +378,8 @@ public class PersistentBinaryTree<T extends Comparable<T>>
         }
     }
 
-    private void preOrderTraversal(final BinaryTreeNode<T> node, final Consumer<T> action) {
+    private void preOrderTraversal(final BinaryTreeNode<T> node,
+        final Consumer<T> action) {
         if (node != null) {
             action.accept(node.getValue());
             preOrderTraversal(node.getLeft(), action);
@@ -372,7 +387,8 @@ public class PersistentBinaryTree<T extends Comparable<T>>
         }
     }
 
-    private void postOrderTraversal(final BinaryTreeNode<T> node, final Consumer<T> action) {
+    private void postOrderTraversal(final BinaryTreeNode<T> node,
+        final Consumer<T> action) {
         if (node != null) {
             postOrderTraversal(node.getLeft(), action);
             postOrderTraversal(node.getRight(), action);
@@ -387,7 +403,7 @@ public class PersistentBinaryTree<T extends Comparable<T>>
     }
 
     @Override
-    final public String toString() {
+    public final String toString() {
         List<String> elements = new ArrayList<>();
         inOrderTraversal(value -> elements.add(value.toString()));
         return "PersistentBinaryTree[" + String.join(", ", elements) + "]";
