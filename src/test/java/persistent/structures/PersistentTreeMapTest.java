@@ -244,7 +244,6 @@ class PersistentTreeMapTest {
             .put("key1", null)
             .put("key2", "value");
         
-        System.out.println(map.toString());
         assertFalse(map.containsKey("key1"));
         assertNull(map.get("key1"));
         assertEquals("value", map.get("key2"));
