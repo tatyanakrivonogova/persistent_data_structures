@@ -35,11 +35,12 @@ public class BinaryTreeNode<T extends Comparable<T>> {
      * Constructs a new binary tree node with the specified value and children.
      * The height is automatically calculated based on the children's heights.
      *
-     * @param value the value to store in this node
-     * @param left the left child node, may be null
-     * @param right the right child node, may be null
+     * @param valueValue the value to store in this node
+     * @param leftValue the left child node, may be null
+     * @param rightValue the right child node, may be null
      */
-    public BinaryTreeNode(final T valueValue, final BinaryTreeNode<T> leftValue, 
+    public BinaryTreeNode(final T valueValue,
+        final BinaryTreeNode<T> leftValue,
         final BinaryTreeNode<T> rightValue) {
         this.value = valueValue;
         this.left = leftValue;
@@ -50,10 +51,11 @@ public class BinaryTreeNode<T extends Comparable<T>> {
     /**
      * Calculates the height of the given tree node.
      *
+     * @param <T> the type of elements stored in the binary node
      * @param node the node to calculate height for, may be null
      * @return the height of the node, or 0 if the node is null
      */
-    private static <T extends Comparable<T>> int 
+    private static <T extends Comparable<T>> int
         height(final BinaryTreeNode<T> node) {
         return node == null ? 0 : node.getHeight();
     }
@@ -152,7 +154,7 @@ public class BinaryTreeNode<T extends Comparable<T>> {
      * @return true if this node has exactly one child, false otherwise
      */
     public boolean hasSingleChild() {
-        return (left == null && right != null) 
+        return (left == null && right != null)
             || (left != null && right == null);
     }
 
