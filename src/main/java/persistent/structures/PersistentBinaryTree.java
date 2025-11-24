@@ -4,7 +4,6 @@ import persistent.core.AbstractPersistentStructure;
 import persistent.core.Version;
 import persistent.utils.BinaryTreeNode;
 
-// import java.util.*;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
