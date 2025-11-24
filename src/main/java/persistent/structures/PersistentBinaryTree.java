@@ -25,7 +25,7 @@ public class PersistentBinaryTree<T extends Comparable<T>>
      * The root node of the binary tree.
      */
     private final BinaryTreeNode<T> root;
-    
+
     /**
      * The number of elements in the binary tree.
      */
@@ -42,12 +42,12 @@ public class PersistentBinaryTree<T extends Comparable<T>>
 
     /**
      * Private constructor for creating new versions of the tree.
-     * 
+     *
      * @param rootValue the root node of the tree
      * @param sizeValue the size of the tree
      * @param version the version identifier for this tree instance
      */
-    private PersistentBinaryTree(final BinaryTreeNode<T> rootValue, 
+    private PersistentBinaryTree(final BinaryTreeNode<T> rootValue,
         final int sizeValue, final Version version) {
         super(version);
         this.root = rootValue;
@@ -62,7 +62,7 @@ public class PersistentBinaryTree<T extends Comparable<T>>
      */
     public PersistentBinaryTree<T> insert(final T value) {
         BinaryTreeNode<T> newRoot = insert(root, value);
-        boolean valueExists = newRoot == root && root != null 
+        boolean valueExists = newRoot == root && root != null
                                 && contains(value);
 
         Version newVersion = createNewVersion();
@@ -270,18 +270,20 @@ public class PersistentBinaryTree<T extends Comparable<T>>
         }
     }
 
-    private BinaryTreeNode<T> findMin(BinaryTreeNode<T> node) {
-        while (node.getLeft() != null) {
-            node = node.getLeft();
+    private BinaryTreeNode<T> findMin(final BinaryTreeNode<T> node) {
+        BinaryTreeNode<T> current = node;
+        while (current.getLeft() != null) {
+            current = current.getLeft();
         }
-        return node;
+        return current;
     }
 
-    private BinaryTreeNode<T> findMax(BinaryTreeNode<T> node) {
-        while (node.getRight() != null) {
-            node = node.getRight();
+    private BinaryTreeNode<T> findMax(final BinaryTreeNode<T> node) {
+        BinaryTreeNode<T> current = node;
+        while (current.getRight() != null) {
+            current = current.getRight();
         }
-        return node;
+        return current;
     }
 
     private BinaryTreeNode<T> removeMin(final BinaryTreeNode<T> node) {
