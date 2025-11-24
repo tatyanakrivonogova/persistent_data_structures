@@ -62,11 +62,11 @@ public class PersistentTreeMap<K extends Comparable<K>, V> extends AbstractPersi
      * @return a new persistent map without the specified key mapping
      */
     public PersistentTreeMap<K, V> remove(K key) {
-        TreeNode<K, V> newRoot = remove(root, key);
-        if (newRoot == root) {
-            return this; // Key not found
+        if (!containsKey(key)) {
+            return this; // Key not found - return same instance
         }
         
+        TreeNode<K, V> newRoot = remove(root, key);
         Version newVersion = createNewVersion();
         return new PersistentTreeMap<>(newRoot, size - 1, newVersion);
     }
