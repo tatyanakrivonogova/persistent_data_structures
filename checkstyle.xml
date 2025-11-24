@@ -5,10 +5,15 @@
 
 <module name="Checker">
 
-    <module name="JavadocPackage">
-        <property name="severity" value="ignore"/>
+    <module name="TreeWalker">
+
+        <module name="MagicNumber">
+            <property name="severity" value="off"/>
+        </module>
+
     </module>
-    <module name="MagicNumber">
+
+    <module name="JavadocPackage">
         <property name="severity" value="ignore"/>
     </module>
 
