@@ -8,5 +8,8 @@
     <module name="JavadocPackage">
         <property name="severity" value="ignore"/>
     </module>
+    <module name="MagicNumber">
+        <property name="severity" value="ignore"/>
+    </module>
 
 </module>
