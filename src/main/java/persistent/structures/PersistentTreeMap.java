@@ -20,7 +20,7 @@ import java.util.AbstractMap;
  * @param <V> the type of mapped values
  * @version 1.0
  */
-public class PersistentTreeMap<K extends Comparable<K>, V> 
+public class PersistentTreeMap<K extends Comparable<K>, V>
     extends AbstractPersistentStructure<Map.Entry<K, V>> {
     /**
      * The root node of the tree.
@@ -47,9 +47,9 @@ public class PersistentTreeMap<K extends Comparable<K>, V>
      * @param rootValue the root node of TreeMap
      * @param sizeValue the number of nodes in TreeMap
      * @param versionValue the version of tree
-     * @return a new persistent map containing the specified key-value mapping
      */
-    private PersistentTreeMap(final TreeNode<K, V> rootValue, final int sizeValue, final Version versionValue) {
+    private PersistentTreeMap(final TreeNode<K, V> rootValue,
+        final int sizeValue, final Version versionValue) {
         super(versionValue);
         this.root = rootValue;
         this.size = sizeValue;
@@ -184,7 +184,8 @@ public class PersistentTreeMap<K extends Comparable<K>, V>
         return inOrderTraversal().iterator();
     }
 
-    private TreeNode<K, V> put(final TreeNode<K, V> node, final K key, final V value) {
+    private TreeNode<K, V> put(final TreeNode<K, V> node,
+        final K key, final V value) {
         if (node == null) {
             return new TreeNode<>(key, value, null, null);
         }
@@ -344,7 +345,9 @@ public class PersistentTreeMap<K extends Comparable<K>, V>
     }
 
     private int getBalanceFactor(final TreeNode<K, V> node) {
-        if (node == null) return 0;
+        if (node == null) {
+            return 0;
+        }
         return height(node.getLeft()) - height(node.getRight());
     }
 
@@ -354,22 +357,22 @@ public class PersistentTreeMap<K extends Comparable<K>, V>
 
     private TreeNode<K, V> rotateRight(final TreeNode<K, V> y) {
         TreeNode<K, V> x = y.getLeft();
-        TreeNode<K, V> T2 = x.getRight();
+        TreeNode<K, V> t2 = x.getRight();
 
         return new TreeNode<>(
             x.getKey(), x.getValue(),
             x.getLeft(),
-            new TreeNode<>(y.getKey(), y.getValue(), T2, y.getRight())
+            new TreeNode<>(y.getKey(), y.getValue(), t2, y.getRight())
         );
     }
 
     private TreeNode<K, V> rotateLeft(final TreeNode<K, V> x) {
         TreeNode<K, V> y = x.getRight();
-        TreeNode<K, V> T2 = y.getLeft();
+        TreeNode<K, V> t2 = y.getLeft();
 
         return new TreeNode<>(
             y.getKey(), y.getValue(),
-            new TreeNode<>(x.getKey(), x.getValue(), x.getLeft(), T2),
+            new TreeNode<>(x.getKey(), x.getValue(), x.getLeft(), t2),
             y.getRight()
         );
     }
