@@ -20,8 +20,16 @@ import java.util.AbstractMap;
  * @param <V> the type of mapped values
  * @version 1.0
  */
-public class PersistentTreeMap<K extends Comparable<K>, V> extends AbstractPersistentStructure<Map.Entry<K, V>> {
+public class PersistentTreeMap<K extends Comparable<K>, V> 
+    extends AbstractPersistentStructure<Map.Entry<K, V>> {
+    /**
+     * The root node of the tree.
+     */
     private final TreeNode<K, V> root;
+
+    /**
+     * The number of elements in the binary tree.
+     */
     private final int size;
 
     /**
@@ -35,11 +43,16 @@ public class PersistentTreeMap<K extends Comparable<K>, V> extends AbstractPersi
 
     /**
      * Private constructor for creating new versions of the map.
+     *
+     * @param rootValue the root node of TreeMap
+     * @param sizeValue the number of nodes in TreeMap
+     * @param versionValue the version of tree
+     * @return a new persistent map containing the specified key-value mapping
      */
-    private PersistentTreeMap(TreeNode<K, V> root, int size, Version version) {
-        super(version);
-        this.root = root;
-        this.size = size;
+    private PersistentTreeMap(final TreeNode<K, V> rootValue, final int sizeValue, final Version versionValue) {
+        super(versionValue);
+        this.root = rootValue;
+        this.size = sizeValue;
     }
 
     /**
@@ -49,7 +62,7 @@ public class PersistentTreeMap<K extends Comparable<K>, V> extends AbstractPersi
      * @param value the value to be associated with the specified key
      * @return a new persistent map containing the specified key-value mapping
      */
-    public PersistentTreeMap<K, V> put(K key, V value) {
+    public PersistentTreeMap<K, V> put(final K key, final V value) {
         TreeNode<K, V> newRoot = put(root, key, value);
         boolean keyExists = get(root, key) != null;
 
@@ -67,7 +80,7 @@ public class PersistentTreeMap<K extends Comparable<K>, V> extends AbstractPersi
      * @param key the key whose mapping is to be removed from the map
      * @return a new persistent map without the specified key mapping
      */
-    public PersistentTreeMap<K, V> remove(K key) {
+    public PersistentTreeMap<K, V> remove(final K key) {
         if (!containsKey(key)) {
             return this; // Key not found - return same instance
         }
@@ -78,12 +91,14 @@ public class PersistentTreeMap<K extends Comparable<K>, V> extends AbstractPersi
     }
 
     /**
-     * Returns the value to which the specified key is mapped, or null if no mapping exists.
+     * Returns the value to which the specified key is mapped,
+     * or null if no mapping exists.
      *
      * @param key the key whose associated value is to be returned
-     * @return the value to which the specified key is mapped, or null if not present
+     * @return the value to which the specified key is mapped,
+     * or null if not present
      */
-    public V get(K key) {
+    public V get(final K key) {
         TreeNode<K, V> node = get(root, key);
         return node == null ? null : node.getValue();
     }
@@ -94,7 +109,7 @@ public class PersistentTreeMap<K extends Comparable<K>, V> extends AbstractPersi
      * @param key the key whose presence in this map is to be tested
      * @return true if this map contains a mapping for the specified key
      */
-    public boolean containsKey(K key) {
+    public boolean containsKey(final K key) {
         return get(key) != null;
     }
 
@@ -104,7 +119,7 @@ public class PersistentTreeMap<K extends Comparable<K>, V> extends AbstractPersi
      * @param value the value whose presence in this map is to be tested
      * @return true if this map contains the specified value
      */
-    public boolean containsValue(V value) {
+    public boolean containsValue(final V value) {
         return containsValue(root, value);
     }
 
@@ -169,7 +184,7 @@ public class PersistentTreeMap<K extends Comparable<K>, V> extends AbstractPersi
         return inOrderTraversal().iterator();
     }
 
-    private TreeNode<K, V> put(TreeNode<K, V> node, K key, V value) {
+    private TreeNode<K, V> put(final TreeNode<K, V> node, final K key, final V value) {
         if (node == null) {
             return new TreeNode<>(key, value, null, null);
         }
@@ -195,7 +210,7 @@ public class PersistentTreeMap<K extends Comparable<K>, V> extends AbstractPersi
         }
     }
 
-    private TreeNode<K, V> remove(TreeNode<K, V> node, K key) {
+    private TreeNode<K, V> remove(final TreeNode<K, V> node, final K key) {
         if (node == null) {
             return null;
         }
@@ -234,7 +249,7 @@ public class PersistentTreeMap<K extends Comparable<K>, V> extends AbstractPersi
         }
     }
 
-    private TreeNode<K, V> get(TreeNode<K, V> node, K key) {
+    private TreeNode<K, V> get(final TreeNode<K, V> node, final K key) {
         if (node == null) {
             return null;
         }
@@ -249,7 +264,7 @@ public class PersistentTreeMap<K extends Comparable<K>, V> extends AbstractPersi
         }
     }
 
-    private boolean containsValue(TreeNode<K, V> node, V value) {
+    private boolean containsValue(final TreeNode<K, V> node, final V value) {
         if (node == null) {
             return false;
         }
@@ -258,24 +273,27 @@ public class PersistentTreeMap<K extends Comparable<K>, V> extends AbstractPersi
             return true;
         }
 
-        return containsValue(node.getLeft(), value) || containsValue(node.getRight(), value);
+        return containsValue(node.getLeft(), value)
+            || containsValue(node.getRight(), value);
     }
 
-    private TreeNode<K, V> findMin(TreeNode<K, V> node) {
-        while (node.getLeft() != null) {
-            node = node.getLeft();
+    private TreeNode<K, V> findMin(final TreeNode<K, V> node) {
+        TreeNode<K, V> current = node;
+        while (current.getLeft() != null) {
+            current = current.getLeft();
         }
-        return node;
+        return current;
     }
 
-    private TreeNode<K, V> findMax(TreeNode<K, V> node) {
-        while (node.getRight() != null) {
-            node = node.getRight();
+    private TreeNode<K, V> findMax(final TreeNode<K, V> node) {
+        TreeNode<K, V> current = node;
+        while (current.getRight() != null) {
+            current = current.getRight();
         }
-        return node;
+        return current;
     }
 
-    private TreeNode<K, V> removeMin(TreeNode<K, V> node) {
+    private TreeNode<K, V> removeMin(final TreeNode<K, V> node) {
         if (node.getLeft() == null) {
             return node.getRight();
         }
@@ -287,7 +305,7 @@ public class PersistentTreeMap<K extends Comparable<K>, V> extends AbstractPersi
         ));
     }
 
-    private TreeNode<K, V> balance(TreeNode<K, V> node) {
+    private TreeNode<K, V> balance(final TreeNode<K, V> node) {
         if (node == null) {
             return null;
         }
@@ -325,16 +343,16 @@ public class PersistentTreeMap<K extends Comparable<K>, V> extends AbstractPersi
         return node;
     }
 
-    private int getBalanceFactor(TreeNode<K, V> node) {
+    private int getBalanceFactor(final TreeNode<K, V> node) {
         if (node == null) return 0;
         return height(node.getLeft()) - height(node.getRight());
     }
 
-    private int height(TreeNode<K, V> node) {
+    private int height(final TreeNode<K, V> node) {
         return node == null ? 0 : node.getHeight();
     }
 
-    private TreeNode<K, V> rotateRight(TreeNode<K, V> y) {
+    private TreeNode<K, V> rotateRight(final TreeNode<K, V> y) {
         TreeNode<K, V> x = y.getLeft();
         TreeNode<K, V> T2 = x.getRight();
 
@@ -345,7 +363,7 @@ public class PersistentTreeMap<K extends Comparable<K>, V> extends AbstractPersi
         );
     }
 
-    private TreeNode<K, V> rotateLeft(TreeNode<K, V> x) {
+    private TreeNode<K, V> rotateLeft(final TreeNode<K, V> x) {
         TreeNode<K, V> y = x.getRight();
         TreeNode<K, V> T2 = y.getLeft();
 
@@ -356,7 +374,7 @@ public class PersistentTreeMap<K extends Comparable<K>, V> extends AbstractPersi
         );
     }
 
-    private boolean isBalanced(TreeNode<K, V> node) {
+    private boolean isBalanced(final TreeNode<K, V> node) {
         if (node == null) {
             return true;
         }
@@ -375,16 +393,18 @@ public class PersistentTreeMap<K extends Comparable<K>, V> extends AbstractPersi
         return result;
     }
 
-    private void inOrderTraversal(TreeNode<K, V> node, List<Map.Entry<K, V>> result) {
+    private void inOrderTraversal(final TreeNode<K, V> node,
+        final List<Map.Entry<K, V>> result) {
         if (node != null) {
             inOrderTraversal(node.getLeft(), result);
-            result.add(new AbstractMap.SimpleEntry<>(node.getKey(), node.getValue()));
+            result.add(new AbstractMap.SimpleEntry<>(
+                node.getKey(), node.getValue()));
             inOrderTraversal(node.getRight(), result);
         }
     }
 
     @Override
-    public String toString() {
+    public final String toString() {
         List<String> entries = new ArrayList<>();
         for (Map.Entry<K, V> entry : this) {
             entries.add(entry.getKey() + "=" + entry.getValue());
