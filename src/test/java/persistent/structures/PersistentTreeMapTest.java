@@ -49,7 +49,7 @@ class PersistentTreeMapTest {
 
     @Test
     void testPutMultipleElements() {
-        PersistentTreeMap<String, Integer> map = 
+        PersistentTreeMap<String, Integer> map =
             new PersistentTreeMap<String, Integer>()
             .put("one", 1)
             .put("two", 2)
@@ -67,7 +67,7 @@ class PersistentTreeMapTest {
 
     @Test
     void testPutUpdateExisting() {
-        PersistentTreeMap<String, Integer> map = 
+        PersistentTreeMap<String, Integer> map =
             new PersistentTreeMap<String, Integer>()
             .put("key", 1);
 
@@ -82,7 +82,7 @@ class PersistentTreeMapTest {
 
     @Test
     void testRemoveElement() {
-        PersistentTreeMap<String, Integer> map = 
+        PersistentTreeMap<String, Integer> map =
             new PersistentTreeMap<String, Integer>()
             .put("one", 1)
             .put("two", 2)
@@ -101,7 +101,7 @@ class PersistentTreeMapTest {
 
     @Test
     void testRemoveNonExistentElement() {
-        PersistentTreeMap<String, Integer> map = 
+        PersistentTreeMap<String, Integer> map =
             new PersistentTreeMap<String, Integer>().put("key", 1);
         PersistentTreeMap<String, Integer> sameMap = map.remove("nonexistent");
 
@@ -123,7 +123,7 @@ class PersistentTreeMapTest {
 
     @Test
     void testFirstAndLastKey() {
-        PersistentTreeMap<String, Integer> map = 
+        PersistentTreeMap<String, Integer> map =
             new PersistentTreeMap<String, Integer>()
             .put("banana", 3)
             .put("apple", 1)
@@ -149,7 +149,7 @@ class PersistentTreeMapTest {
 
     @Test
     void testContainsValue() {
-        PersistentTreeMap<String, Integer> map = 
+        PersistentTreeMap<String, Integer> map =
             new PersistentTreeMap<String, Integer>()
             .put("one", 1)
             .put("two", 2)
@@ -163,7 +163,7 @@ class PersistentTreeMapTest {
 
     @Test
     void testIterator() {
-        PersistentTreeMap<String, Integer> map = 
+        PersistentTreeMap<String, Integer> map =
             new PersistentTreeMap<String, Integer>()
             .put("c", 3)
             .put("a", 1)
@@ -183,7 +183,7 @@ class PersistentTreeMapTest {
 
     @Test
     void testPersistence() {
-        PersistentTreeMap<String, Integer> original = 
+        PersistentTreeMap<String, Integer> original =
             new PersistentTreeMap<String, Integer>()
             .put("one", 1)
             .put("two", 2);
@@ -205,7 +205,7 @@ class PersistentTreeMapTest {
 
     @Test
     void testComplexOperations() {
-        PersistentTreeMap<Integer, String> map = 
+        PersistentTreeMap<Integer, String> map =
             new PersistentTreeMap<Integer, String>()
             .put(50, "fifty")
             .put(30, "thirty")
@@ -259,7 +259,7 @@ class PersistentTreeMapTest {
 
     @Test
     void testNullValues() {
-        PersistentTreeMap<String, String> map = 
+        PersistentTreeMap<String, String> map =
             new PersistentTreeMap<String, String>()
             .put("key1", null)
             .put("key2", "value");
@@ -291,7 +291,7 @@ class PersistentTreeMapTest {
             }
         }
 
-        PersistentTreeMap<ComplexKey, String> map = 
+        PersistentTreeMap<ComplexKey, String> map =
             new PersistentTreeMap<ComplexKey, String>()
             .put(new ComplexKey(1, "first"), "value1")
             .put(new ComplexKey(2, "second"), "value2")
@@ -325,7 +325,7 @@ class PersistentTreeMapTest {
 
     @Test
     void testToString() {
-        PersistentTreeMap<String, Integer> map = 
+        PersistentTreeMap<String, Integer> map =
             new PersistentTreeMap<String, Integer>()
             .put("b", 2)
             .put("a", 1)
