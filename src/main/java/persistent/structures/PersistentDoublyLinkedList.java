@@ -6,17 +6,51 @@ import persistent.core.Version;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
+/**
+ * Persistent, immutable doubly linked list.
+ *
+ * @param <E> element type
+ */
+public class PersistentDoublyLinkedList<E extends Comparable<E>>
+        extends AbstractPersistentStructure<E> {
 
-public final class PersistentDoublyLinkedList<E extends Comparable<E>> extends AbstractPersistentStructure<E> {
-
+    /**
+     * Doubly linked list node.
+     */
     private static final class Node<T> {
-        final T value;
-        Node<T> prev;
-        Node<T> next;
+
+        /** Node value. */
+        private final T value;
+
+        /** Previous node. */
+        private Node<T> prev;
+
+        /** Next node. */
+        private Node<T> next;
 
         Node(T value, Node<T> prev, Node<T> next) {
             this.value = value;
             this.prev = prev;
+            this.next = next;
+        }
+
+        public T getValue() {
+            return value;
+        }
+
+        public Node<T> getPrev() {
+            return prev;
+        }
+
+        public void setPrev(Node<T> prev) {
+            this.prev = prev;
+        }
+
+        public Node<T> getNext() {
+            return next;
+        }
+
+        public void setNext(Node<T> next) {
             this.next = next;
         }
     }
@@ -25,21 +59,24 @@ public final class PersistentDoublyLinkedList<E extends Comparable<E>> extends A
     private final Node<E> tail;
     private final int size;
 
-    private PersistentDoublyLinkedList(Node<E> head, Node<E> tail, int size) {
-        this.head = head;
-        this.tail = tail;
-        this.size = size;
-    }
-
-    private PersistentDoublyLinkedList(Node<E> head, Node<E> tail, int size, Version version) {
+    private PersistentDoublyLinkedList(Node<E> head,
+                                       Node<E> tail,
+                                       int size,
+                                       Version version
+    ) {
         super(version);
         this.head = head;
         this.tail = tail;
         this.size = size;
     }
 
-    public static <T extends Comparable<T>> PersistentDoublyLinkedList<T> empty() {
-        return new PersistentDoublyLinkedList<>(null, null, 0);
+    /**
+     * Empty doubly linked list constructor.
+     */
+    public PersistentDoublyLinkedList() {
+        this.head = null;
+        this.tail = null;
+        this.size = 0;
     }
 
     public boolean isEmpty() {
@@ -52,8 +89,7 @@ public final class PersistentDoublyLinkedList<E extends Comparable<E>> extends A
 
     public E get(int index) {
         checkIndex(index);
-        Node<E> n = nodeAt(index);
-        return n.value;
+        return nodeAt(index).getValue();
     }
 
     public PersistentDoublyLinkedList<E> addFirst(E value) {
@@ -65,8 +101,9 @@ public final class PersistentDoublyLinkedList<E extends Comparable<E>> extends A
     }
 
     public PersistentDoublyLinkedList<E> add(int index, E value) {
-        if (index < 0 || index > size)
+        if (index < 0 || index > size) {
             throw new IndexOutOfBoundsException("index: " + index);
+        }
 
         Version version = createNewVersion();
 
@@ -77,30 +114,34 @@ public final class PersistentDoublyLinkedList<E extends Comparable<E>> extends A
 
         Node<E> newHead = null;
         Node<E> prevNew = null;
-        Node<E> insertedNode = null;
-        int i = 0;
+        Node<E> insertedNode;
+
         Node<E> cur = head;
+        int i = 0;
 
         while (cur != null) {
+
             if (i == index) {
                 insertedNode = new Node<>(value, prevNew, null);
                 if (prevNew == null) {
                     newHead = insertedNode;
                 } else {
-                    prevNew.next = insertedNode;
+                    prevNew.setNext(insertedNode);
                 }
                 prevNew = insertedNode;
             }
 
-            Node<E> copy = new Node<>(cur.value, prevNew, null);
+            Node<E> copy = new Node<>(cur.getValue(), prevNew, null);
             if (prevNew == null) {
                 newHead = copy;
             } else {
-                prevNew.next = copy;
+                prevNew.setNext(copy);
             }
-            prevNew = copy;
 
-            cur = cur.next;
+            copy.setPrev(prevNew);
+
+            prevNew = copy;
+            cur = cur.getNext();
             i++;
         }
 
@@ -109,22 +150,28 @@ public final class PersistentDoublyLinkedList<E extends Comparable<E>> extends A
             if (prevNew == null) {
                 newHead = last;
             } else {
-                prevNew.next = last;
+                prevNew.setNext(last);
             }
+            last.setPrev(prevNew);
             prevNew = last;
         }
 
         Node<E> newTail = prevNew;
-        return new PersistentDoublyLinkedList<>(newHead, newTail, size + 1, version);
+        return new PersistentDoublyLinkedList<>
+                (newHead, newTail, size + 1, version);
     }
 
     public PersistentDoublyLinkedList<E> removeFirst() {
-        if (size == 0) throw new NoSuchElementException("removeFirst from empty list");
+        if (size == 0) {
+            throw new NoSuchElementException("removeFirst from empty list");
+        }
         return remove(0);
     }
 
     public PersistentDoublyLinkedList<E> removeLast() {
-        if (size == 0) throw new NoSuchElementException("removeLast from empty list");
+        if (size == 0) {
+            throw new NoSuchElementException("removeLast from empty list");
+        }
         return remove(size - 1);
     }
 
@@ -139,70 +186,98 @@ public final class PersistentDoublyLinkedList<E extends Comparable<E>> extends A
 
         Node<E> newHead = null;
         Node<E> prevNew = null;
-        int i = 0;
+
         Node<E> cur = head;
+        int i = 0;
+
         while (cur != null) {
             if (i == index) {
-                cur = cur.next;
+                cur = cur.getNext();
                 i++;
                 continue;
             }
-            Node<E> copy = new Node<>(cur.value, prevNew, null);
-            if (prevNew == null) newHead = copy;
-            else prevNew.next = copy;
-            prevNew = copy;
 
-            cur = cur.next;
+            Node<E> copy = new Node<>(cur.getValue(), prevNew, null);
+            if (prevNew == null) {
+                newHead = copy;
+            } else {
+                prevNew.setNext(copy);
+            }
+            copy.setPrev(prevNew);
+
+            prevNew = copy;
+            cur = cur.getNext();
             i++;
         }
+
         Node<E> newTail = prevNew;
-        return new PersistentDoublyLinkedList<>(newHead, newTail, size - 1, version);
+        return new PersistentDoublyLinkedList<>
+                (newHead, newTail, size - 1, version);
     }
 
     private Node<E> nodeAt(int index) {
         Node<E> cur;
+
         if (index < (size >> 1)) {
             cur = head;
-            for (int i = 0; i < index; i++) cur = cur.next;
+            for (int i = 0; i < index; i++) {
+                assert cur != null;
+                cur = cur.getNext();
+            }
         } else {
             cur = tail;
-            for (int i = size - 1; i > index; i--) cur = cur.prev;
+            for (int i = size - 1; i > index; i--) {
+                assert cur != null;
+                cur = cur.getPrev();
+            }
         }
+
         return cur;
     }
 
     private void checkIndex(int index) {
-        if (index < 0 || index >= size)
+        if (index < 0 || index >= size) {
             throw new IndexOutOfBoundsException("index: " + index + ", size: " + size);
+        }
     }
 
     @Override
     public Iterator<E> iterator() {
-        return new Iterator<E>() {
+        return new Iterator<>() {
             private Node<E> cur = head;
+
             @Override
-            public boolean hasNext() { return cur != null; }
+            public boolean hasNext() {
+                return cur != null;
+            }
+
             @Override
             public E next() {
-                if (cur == null) throw new NoSuchElementException();
-                E v = cur.value;
-                cur = cur.next;
-                return v;
+                if (cur == null) {
+                    throw new NoSuchElementException();
+                }
+                E value = cur.getValue();
+                cur = cur.getNext();
+                return value;
             }
         };
     }
 
     @Override
     public String toString() {
-        if (isEmpty()) return "[]";
+        if (isEmpty()) {
+            return "[]";
+        }
         StringBuilder sb = new StringBuilder();
         sb.append('[');
+
         Node<E> cur = head;
         while (cur != null) {
-            sb.append(cur.value);
-            cur = cur.next;
+            sb.append(cur.getValue());
+            cur = cur.getNext();
             if (cur != null) sb.append(", ");
         }
+
         sb.append(']');
         return sb.toString();
     }
