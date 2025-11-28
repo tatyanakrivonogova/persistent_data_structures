@@ -7,19 +7,21 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 /**
- * Persistent, immutable doubly linked list.
+ * Persistent, immutable doubly linked list implementation.
  *
  * @param <E> element type
  */
-public class PersistentDoublyLinkedList<E extends Comparable<E>>
+public final class PersistentDoublyLinkedList<E extends Comparable<E>>
         extends AbstractPersistentStructure<E> {
 
     /**
      * Doubly linked list node.
+     *
+     * @param <T> element type
      */
     private static final class Node<T> {
 
-        /** Node value. */
+        /** Node value (immutable). */
         private final T value;
 
         /** Previous node. */
@@ -28,10 +30,10 @@ public class PersistentDoublyLinkedList<E extends Comparable<E>>
         /** Next node. */
         private Node<T> next;
 
-        Node(T value, Node<T> prev, Node<T> next) {
-            this.value = value;
-            this.prev = prev;
-            this.next = next;
+        Node(final T nodeValue, final Node<T> nodePrev, final Node<T> nodeNext) {
+            this.value = nodeValue;
+            this.prev = nodePrev;
+            this.next = nodeNext;
         }
 
         public T getValue() {
@@ -42,36 +44,50 @@ public class PersistentDoublyLinkedList<E extends Comparable<E>>
             return prev;
         }
 
-        public void setPrev(Node<T> prev) {
-            this.prev = prev;
+        public void setPrev(final Node<T> newPrev) {
+            this.prev = newPrev;
         }
 
         public Node<T> getNext() {
             return next;
         }
 
-        public void setNext(Node<T> next) {
-            this.next = next;
+        public void setNext(final Node<T> newNext) {
+            this.next = newNext;
         }
     }
 
+    /** First element. */
     private final Node<E> head;
+
+    /** Last element. */
     private final Node<E> tail;
+
+    /** Collection size. */
     private final int size;
 
-    private PersistentDoublyLinkedList(Node<E> head,
-                                       Node<E> tail,
-                                       int size,
-                                       Version version
+    /**
+     * Full constructor used internally.
+     *
+     * @param newHead list head
+     * @param newTail list tail
+     * @param newSize list size
+     * @param version structure version
+     */
+    private PersistentDoublyLinkedList(
+            final Node<E> newHead,
+            final Node<E> newTail,
+            final int newSize,
+            final Version version
     ) {
         super(version);
-        this.head = head;
-        this.tail = tail;
-        this.size = size;
+        this.head = newHead;
+        this.tail = newTail;
+        this.size = newSize;
     }
 
     /**
-     * Empty doubly linked list constructor.
+     * Creates an empty persistent doubly linked list.
      */
     public PersistentDoublyLinkedList() {
         this.head = null;
@@ -79,88 +95,125 @@ public class PersistentDoublyLinkedList<E extends Comparable<E>>
         this.size = 0;
     }
 
+    /**
+     * Checks if the list is empty.
+     *
+     * @return true if the list is empty
+     */
     public boolean isEmpty() {
         return size == 0;
     }
 
+    /**
+     * Returns list size.
+     *
+     * @return list size
+     */
     public int size() {
         return size;
     }
 
-    public E get(int index) {
+    /**
+     * Returns element by index.
+     *
+     * @param index index of element
+     * @return element value
+     */
+    public E get(final int index) {
         checkIndex(index);
         return nodeAt(index).getValue();
     }
 
-    public PersistentDoublyLinkedList<E> addFirst(E value) {
+    /**
+     * Adds value to the beginning of the list.
+     *
+     * @param value new value
+     * @return new list version
+     */
+    public PersistentDoublyLinkedList<E> addFirst(final E value) {
         return add(0, value);
     }
 
-    public PersistentDoublyLinkedList<E> addLast(E value) {
+    /**
+     * Adds value to the end of the list.
+     *
+     * @param value new value
+     * @return new list version
+     */
+    public PersistentDoublyLinkedList<E> addLast(final E value) {
         return add(size, value);
     }
 
-    public PersistentDoublyLinkedList<E> add(int index, E value) {
+    /**
+     * Inserts a value at a given index.
+     *
+     * @param index target index
+     * @param value element to add
+     * @return new list version
+     */
+    public PersistentDoublyLinkedList<E> add(final int index, final E value) {
         if (index < 0 || index > size) {
             throw new IndexOutOfBoundsException("index: " + index);
         }
 
-        Version version = createNewVersion();
+        final Version version = createNewVersion();
 
         if (size == 0) {
-            Node<E> n = new Node<>(value, null, null);
-            return new PersistentDoublyLinkedList<>(n, n, 1, version);
+            final Node<E> newNode = new Node<>(value, null, null);
+            return new PersistentDoublyLinkedList<>(newNode, newNode, 1, version);
         }
 
         Node<E> newHead = null;
-        Node<E> prevNew = null;
-        Node<E> insertedNode;
+        Node<E> prevNewNode = null;
+        Node<E> insertedNode = null;
 
-        Node<E> cur = head;
-        int i = 0;
+        Node<E> curNode = head;
+        int pos = 0;
 
-        while (cur != null) {
-
-            if (i == index) {
-                insertedNode = new Node<>(value, prevNew, null);
-                if (prevNew == null) {
+        while (curNode != null) {
+            if (pos == index) {
+                insertedNode = new Node<>(value, prevNewNode, null);
+                if (prevNewNode == null) {
                     newHead = insertedNode;
                 } else {
-                    prevNew.setNext(insertedNode);
+                    prevNewNode.setNext(insertedNode);
                 }
-                prevNew = insertedNode;
+                prevNewNode = insertedNode;
             }
 
-            Node<E> copy = new Node<>(cur.getValue(), prevNew, null);
-            if (prevNew == null) {
-                newHead = copy;
+            final Node<E> copied = new Node<>(curNode.getValue(), prevNewNode, null);
+            if (prevNewNode == null) {
+                newHead = copied;
             } else {
-                prevNew.setNext(copy);
+                prevNewNode.setNext(copied);
             }
 
-            copy.setPrev(prevNew);
+            copied.setPrev(prevNewNode);
 
-            prevNew = copy;
-            cur = cur.getNext();
-            i++;
+            prevNewNode = copied;
+            curNode = curNode.getNext();
+            pos++;
         }
 
         if (index == size) {
-            Node<E> last = new Node<>(value, prevNew, null);
-            if (prevNew == null) {
-                newHead = last;
+            final Node<E> lastNode = new Node<>(value, prevNewNode, null);
+            if (prevNewNode == null) {
+                newHead = lastNode;
             } else {
-                prevNew.setNext(last);
+                prevNewNode.setNext(lastNode);
             }
-            last.setPrev(prevNew);
-            prevNew = last;
+            lastNode.setPrev(prevNewNode);
+            prevNewNode = lastNode;
         }
 
-        Node<E> newTail = prevNew;
-        return new PersistentDoublyLinkedList<>
-                (newHead, newTail, size + 1, version);
+        return new PersistentDoublyLinkedList<>(newHead, prevNewNode, size + 1, version);
     }
 
+    /**
+     * Removes the first element.
+     *
+     * @return new list version
+     */
     public PersistentDoublyLinkedList<E> removeFirst() {
         if (size == 0) {
             throw new NoSuchElementException("removeFirst from empty list");
@@ -168,6 +221,11 @@ public class PersistentDoublyLinkedList<E extends Comparable<E>>
         return remove(0);
     }
 
+    /**
+     * Removes the last element.
+     *
+     * @return new list version
+     */
     public PersistentDoublyLinkedList<E> removeLast() {
         if (size == 0) {
             throw new NoSuchElementException("removeLast from empty list");
@@ -175,72 +233,82 @@ public class PersistentDoublyLinkedList<E extends Comparable<E>>
         return remove(size - 1);
     }
 
-    public PersistentDoublyLinkedList<E> remove(int index) {
+    /**
+     * Removes element at index.
+     *
+     * @param index index of removable element
+     * @return new list version
+     */
+    public PersistentDoublyLinkedList<E> remove(final int index) {
         checkIndex(index);
 
-        Version version = createNewVersion();
+        final Version version = createNewVersion();
 
         if (size == 1) {
             return new PersistentDoublyLinkedList<>(null, null, 0, version);
         }
 
         Node<E> newHead = null;
-        Node<E> prevNew = null;
+        Node<E> prevNewNode = null;
 
-        Node<E> cur = head;
-        int i = 0;
+        Node<E> curNode = head;
+        int pos = 0;
 
-        while (cur != null) {
-            if (i == index) {
-                cur = cur.getNext();
-                i++;
+        while (curNode != null) {
+            if (pos == index) {
+                curNode = curNode.getNext();
+                pos++;
                 continue;
             }
 
-            Node<E> copy = new Node<>(cur.getValue(), prevNew, null);
-            if (prevNew == null) {
-                newHead = copy;
+            final Node<E> copied = new Node<>(curNode.getValue(), prevNewNode, null);
+            if (prevNewNode == null) {
+                newHead = copied;
             } else {
-                prevNew.setNext(copy);
+                prevNewNode.setNext(copied);
             }
-            copy.setPrev(prevNew);
 
-            prevNew = copy;
-            cur = cur.getNext();
-            i++;
+            copied.setPrev(prevNewNode);
+
+            prevNewNode = copied;
+            curNode = curNode.getNext();
+            pos++;
         }
 
-        Node<E> newTail = prevNew;
-        return new PersistentDoublyLinkedList<>
-                (newHead, newTail, size - 1, version);
+        return new PersistentDoublyLinkedList<>(newHead, prevNewNode, size - 1, version);
     }
 
-    private Node<E> nodeAt(int index) {
-        Node<E> cur;
+    /** @return node at index */
+    private Node<E> nodeAt(final int index) {
+        Node<E> current;
 
         if (index < (size >> 1)) {
-            cur = head;
+            current = head;
             for (int i = 0; i < index; i++) {
-                assert cur != null;
-                cur = cur.getNext();
+                current = current.getNext();
             }
         } else {
-            cur = tail;
+            current = tail;
             for (int i = size - 1; i > index; i--) {
-                assert cur != null;
-                cur = cur.getPrev();
+                current = current.getPrev();
             }
         }
 
-        return cur;
+        return current;
     }
 
-    private void checkIndex(int index) {
+    /** Validates index. */
+    private void checkIndex(final int index) {
         if (index < 0 || index >= size) {
             throw new IndexOutOfBoundsException("index: " + index + ", size: " + size);
         }
     }
 
+    /**
+     * Returns iterator over list elements.
+     *
+     * @return iterator
+     */
     @Override
     public Iterator<E> iterator() {
         return new Iterator<>() {
@@ -256,26 +324,33 @@ public class PersistentDoublyLinkedList<E extends Comparable<E>>
                 if (cur == null) {
                     throw new NoSuchElementException();
                 }
-                E value = cur.getValue();
+                final E val = cur.getValue();
                 cur = cur.getNext();
-                return value;
+                return val;
             }
         };
     }
 
+    /**
+     * Returns string representation.
+     *
+     * @return string representation
+     */
     @Override
     public String toString() {
         if (isEmpty()) {
             return "[]";
         }
-        StringBuilder sb = new StringBuilder();
+        final StringBuilder sb = new StringBuilder();
         sb.append('[');
 
-        Node<E> cur = head;
-        while (cur != null) {
-            sb.append(cur.getValue());
-            cur = cur.getNext();
-            if (cur != null) sb.append(", ");
+        Node<E> curNode = head;
+        while (curNode != null) {
+            sb.append(curNode.getValue());
+            curNode = curNode.getNext();
+            if (curNode != null) {
+                sb.append(", ");
+            }
         }
 
         sb.append(']');
