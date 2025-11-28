@@ -30,7 +30,9 @@ public final class PersistentDoublyLinkedList<E extends Comparable<E>>
         /** Next node. */
         private Node<T> next;
 
-        Node(final T nodeValue, final Node<T> nodePrev, final Node<T> nodeNext) {
+        Node(final T nodeValue,
+             final Node<T> nodePrev,
+             final Node<T> nodeNext) {
             this.value = nodeValue;
             this.prev = nodePrev;
             this.next = nodeNext;
@@ -160,7 +162,9 @@ public final class PersistentDoublyLinkedList<E extends Comparable<E>>
 
         if (size == 0) {
             final Node<E> newNode = new Node<>(value, null, null);
-            return new PersistentDoublyLinkedList<>(newNode, newNode, 1, version);
+            return new PersistentDoublyLinkedList<>(
+                    newNode, newNode, 1, version
+            );
         }
 
         Node<E> newHead = null;
@@ -181,7 +185,9 @@ public final class PersistentDoublyLinkedList<E extends Comparable<E>>
                 prevNewNode = insertedNode;
             }
 
-            final Node<E> copied = new Node<>(curNode.getValue(), prevNewNode, null);
+            final Node<E> copied = new Node<>(
+                    curNode.getValue(), prevNewNode, null
+            );
             if (prevNewNode == null) {
                 newHead = copied;
             } else {
@@ -206,7 +212,9 @@ public final class PersistentDoublyLinkedList<E extends Comparable<E>>
             prevNewNode = lastNode;
         }
 
-        return new PersistentDoublyLinkedList<>(newHead, prevNewNode, size + 1, version);
+        return new PersistentDoublyLinkedList<>(
+                newHead, prevNewNode, size + 1, version
+        );
     }
 
     /**
@@ -245,7 +253,9 @@ public final class PersistentDoublyLinkedList<E extends Comparable<E>>
         final Version version = createNewVersion();
 
         if (size == 1) {
-            return new PersistentDoublyLinkedList<>(null, null, 0, version);
+            return new PersistentDoublyLinkedList<>(
+                    null, null, 0, version
+            );
         }
 
         Node<E> newHead = null;
@@ -261,7 +271,9 @@ public final class PersistentDoublyLinkedList<E extends Comparable<E>>
                 continue;
             }
 
-            final Node<E> copied = new Node<>(curNode.getValue(), prevNewNode, null);
+            final Node<E> copied = new Node<>(
+                    curNode.getValue(), prevNewNode, null
+            );
             if (prevNewNode == null) {
                 newHead = copied;
             } else {
@@ -275,10 +287,18 @@ public final class PersistentDoublyLinkedList<E extends Comparable<E>>
             pos++;
         }
 
-        return new PersistentDoublyLinkedList<>(newHead, prevNewNode, size - 1, version);
+        return new PersistentDoublyLinkedList<>(
+                newHead, prevNewNode, size - 1, version
+        );
     }
 
-    /** @return node at index */
+    /**
+     * Get node at index.
+     *
+     * @param index node index
+     *
+     * @return node at index
+     * */
     private Node<E> nodeAt(final int index) {
         Node<E> current;
 
@@ -297,10 +317,16 @@ public final class PersistentDoublyLinkedList<E extends Comparable<E>>
         return current;
     }
 
-    /** Validates index. */
+    /**
+     * Validates index.
+     *
+     * @param index index to validate
+     * */
     private void checkIndex(final int index) {
         if (index < 0 || index >= size) {
-            throw new IndexOutOfBoundsException("index: " + index + ", size: " + size);
+            throw new IndexOutOfBoundsException(
+                    "index: " + index + ", size: " + size
+            );
         }
     }
 
