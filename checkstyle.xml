@@ -8,13 +8,9 @@
     <module name="TreeWalker">
 
         <module name="MagicNumber">
-            <property name="severity" value="ignore"/>
+            <property name="severity" value="off"/>
         </module>
 
-    </module>
-
-    <module name="MagicNumber">
-        <property name="severity" value="ignore"/>
     </module>
 
     <module name="JavadocPackage">
