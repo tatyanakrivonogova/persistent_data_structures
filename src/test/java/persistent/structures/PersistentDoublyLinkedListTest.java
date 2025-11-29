@@ -5,19 +5,27 @@ import org.junit.jupiter.api.DisplayName;
 
 import java.util.NoSuchElementException;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-/**
- * Unit tests for PersistentDoublyLinkedListTest implementation.
- */
 public class PersistentDoublyLinkedListTest {
+
+    private static final int ZERO = 0;
+    private static final int ONE  = 1;
+    private static final int TWO  = 2;
+    private static final int THREE = 3;
+    private static final int FIVE = 5;
+    private static final int TEN = 10;
+    private static final int TWENTY = 20;
+    private static final int THIRTY = 30;
 
     @Test
     @DisplayName("Should create an empty list")
     void testEmptyList() {
         var list = new PersistentDoublyLinkedList<Integer>();
         assertTrue(list.isEmpty());
-        assertEquals(0, list.size());
+        assertEquals(ZERO, list.size());
         assertEquals("[]", list.toString());
     }
 
@@ -25,13 +33,12 @@ public class PersistentDoublyLinkedListTest {
     @DisplayName("Should add last elements correctly")
     void testAddLast() {
         var a = new PersistentDoublyLinkedList<Integer>();
-        var b = a.addLast(1);
-        var c = b.addLast(2);
+        var b = a.addLast(ONE);
+        var c = b.addLast(TWO);
 
         assertEquals("[1]", b.toString());
         assertEquals("[1, 2]", c.toString());
 
-        // old versions are the same
         assertEquals("[]", a.toString());
         assertEquals("[1]", b.toString());
     }
@@ -40,10 +47,9 @@ public class PersistentDoublyLinkedListTest {
     @DisplayName("Should add first elements correctly")
     void testAddFirst() {
         var a = new PersistentDoublyLinkedList<Integer>();
-        var b = a.addFirst(1);
-        var c = b.addFirst(0);
+        var b = a.addFirst(ONE);
+        var c = b.addFirst(ZERO);
 
-        // old versions re the same
         assertEquals("[1]", b.toString());
         assertEquals("[0, 1]", c.toString());
     }
@@ -52,9 +58,9 @@ public class PersistentDoublyLinkedListTest {
     @DisplayName("Should add elements by index correctly")
     void testAddByIndex() {
         var list = new PersistentDoublyLinkedList<Integer>()
-                .addLast(1).addLast(3);
+                .addLast(ONE).addLast(THREE);
 
-        var list2 = list.add(1, 2);
+        var list2 = list.add(ONE, TWO);
 
         assertEquals("[1, 3]", list.toString());
         assertEquals("[1, 2, 3]", list2.toString());
@@ -64,9 +70,9 @@ public class PersistentDoublyLinkedListTest {
     @DisplayName("Should remove elements by index correctly")
     void testRemoveByIndex() {
         var list = new PersistentDoublyLinkedList<Integer>()
-                .addLast(1).addLast(2).addLast(3);
+                .addLast(ONE).addLast(TWO).addLast(THREE);
 
-        var list2 = list.remove(1); // remove 2
+        var list2 = list.remove(ONE);
 
         assertEquals("[1, 2, 3]", list.toString());
         assertEquals("[1, 3]", list2.toString());
@@ -76,7 +82,7 @@ public class PersistentDoublyLinkedListTest {
     @DisplayName("Should remove the first and the last elements correctly")
     void testRemoveFirstLast() {
         var list = new PersistentDoublyLinkedList<Integer>()
-                .addLast(1).addLast(2).addLast(3);
+                .addLast(ONE).addLast(TWO).addLast(THREE);
 
         var a = list.removeFirst();
         var b = list.removeLast();
@@ -92,28 +98,25 @@ public class PersistentDoublyLinkedListTest {
         var list = new PersistentDoublyLinkedList<String>()
                 .addLast("a").addLast("b").addLast("c");
 
-        assertEquals("a", list.get(0));
-        assertEquals("b", list.get(1));
-        assertEquals("c", list.get(2));
+        assertEquals("a", list.get(ZERO));
+        assertEquals("b", list.get(ONE));
+        assertEquals("c", list.get(TWO));
     }
 
     @Test
     @DisplayName("Should throw IndexOutOfBoundsException on invalid args")
     void testIndexExceptions() {
-        var list = new PersistentDoublyLinkedList<Integer>().addLast(1);
+        var list = new PersistentDoublyLinkedList<Integer>().addLast(ONE);
 
-        assertThrows(IndexOutOfBoundsException.class, () -> list.get(-1));
-        assertThrows(IndexOutOfBoundsException.class, () -> list.get(2));
+        assertThrows(IndexOutOfBoundsException.class, () -> list.get(-ONE));
+        assertThrows(IndexOutOfBoundsException.class, () -> list.get(TWO));
 
-        assertThrows(IndexOutOfBoundsException.class, () -> list.add(5, 10));
-        assertThrows(IndexOutOfBoundsException.class, () -> list.remove(1));
+        assertThrows(IndexOutOfBoundsException.class, () -> list.add(FIVE, TEN));
+        assertThrows(IndexOutOfBoundsException.class, () -> list.remove(ONE));
     }
 
     @Test
-    @DisplayName(
-            "Should throw IndexOutOfBoundsException " +
-                    "on removing from an empty list"
-    )
+    @DisplayName("Should throw IndexOutOfBoundsException on removing from an empty list")
     void testRemoveFromEmpty() {
         var empty = new PersistentDoublyLinkedList<Integer>();
 
@@ -125,9 +128,9 @@ public class PersistentDoublyLinkedListTest {
     @DisplayName("Should leave old versions without changes")
     void testPersistence() {
         var a = new PersistentDoublyLinkedList<Integer>();
-        var b = a.addLast(1);
-        var c = b.addLast(2);
-        var d = c.remove(0);
+        var b = a.addLast(ONE);
+        var c = b.addLast(TWO);
+        var d = c.remove(ZERO);
 
         assertEquals("[]", a.toString());
         assertEquals("[1]", b.toString());
@@ -139,15 +142,14 @@ public class PersistentDoublyLinkedListTest {
     @DisplayName("Should return valid iterator")
     void testIterator() {
         var list = new PersistentDoublyLinkedList<Integer>()
-                .addLast(10).addLast(20).addLast(30);
+                .addLast(TEN).addLast(TWENTY).addLast(THIRTY);
 
-        int[] expected = {10, 20, 30};
-        int i = 0;
+        int[] expected = {TEN, TWENTY, THIRTY};
+        int i = ZERO;
         for (int v : list) {
             assertEquals(expected[i++], v);
         }
 
-        assertEquals(3, i);
+        assertEquals(THREE, i);
     }
 }
-
