@@ -11,13 +11,28 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class PersistentDoublyLinkedListTest {
 
+    /** Const 0. */
     private static final int ZERO = 0;
+
+    /** Const 1. */
     private static final int ONE  = 1;
+
+    /** Const 2. */
     private static final int TWO  = 2;
+
+    /** Const 3. */
     private static final int THREE = 3;
+
+    /** Const 5. */
     private static final int FIVE = 5;
+
+    /** Const 10. */
     private static final int TEN = 10;
+
+    /** Const 20. */
     private static final int TWENTY = 20;
+
+    /** Const 30. */
     private static final int THIRTY = 30;
 
     @Test
@@ -79,7 +94,9 @@ public class PersistentDoublyLinkedListTest {
     }
 
     @Test
-    @DisplayName("Should remove the first and the last elements correctly")
+    @DisplayName(
+            "Should remove the first and the last elements correctly"
+    )
     void testRemoveFirstLast() {
         var list = new PersistentDoublyLinkedList<Integer>()
                 .addLast(ONE).addLast(TWO).addLast(THREE);
@@ -104,7 +121,9 @@ public class PersistentDoublyLinkedListTest {
     }
 
     @Test
-    @DisplayName("Should throw IndexOutOfBoundsException on invalid args")
+    @DisplayName(
+            "Should throw IndexOutOfBoundsException on invalid args"
+    )
     void testIndexExceptions() {
         var list = new PersistentDoublyLinkedList<Integer>().addLast(ONE);
 
@@ -116,7 +135,9 @@ public class PersistentDoublyLinkedListTest {
     }
 
     @Test
-    @DisplayName("Should throw IndexOutOfBoundsException on removing from an empty list")
+    @DisplayName(
+            "Should throw Exception on removing from an empty list"
+    )
     void testRemoveFromEmpty() {
         var empty = new PersistentDoublyLinkedList<Integer>();
 
