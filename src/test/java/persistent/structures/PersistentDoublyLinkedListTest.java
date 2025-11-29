@@ -130,7 +130,9 @@ public class PersistentDoublyLinkedListTest {
         assertThrows(IndexOutOfBoundsException.class, () -> list.get(-ONE));
         assertThrows(IndexOutOfBoundsException.class, () -> list.get(TWO));
 
-        assertThrows(IndexOutOfBoundsException.class, () -> list.add(FIVE, TEN));
+        assertThrows(IndexOutOfBoundsException.class,
+                () -> list.add(FIVE, TEN)
+        );
         assertThrows(IndexOutOfBoundsException.class, () -> list.remove(ONE));
     }
 
