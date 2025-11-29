@@ -276,7 +276,8 @@ public final class PersistentDoublyLinkedList<E extends Comparable<E>>
     }
 
     /**
-     * Creates a copy of a node, links it to the previous one and updates headRef.
+     * Creates a copy of a node, links it to the
+     * previous one and updates headRef.
      *
      * @param source original node
      * @param headRef reference to newHead
