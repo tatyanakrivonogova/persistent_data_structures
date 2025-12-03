@@ -169,8 +169,8 @@ public class PersistentBinaryTree<T extends Comparable<T>>
             if (left != null ? !left.equals(that.left) : that.left != null) {
                 return false;
             }
-            return right != null ? right.equals(that.right) :
-                that.right == null;
+            return right != null ? right.equals(that.right)
+                : that.right == null;
         }
 
         /**

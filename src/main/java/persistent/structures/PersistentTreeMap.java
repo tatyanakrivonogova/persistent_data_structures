@@ -27,7 +27,8 @@ public class PersistentTreeMap<K extends Comparable<K>, V>
      * This class represents a node in a balanced binary search tree with
      * height information for maintaining tree balance.
      *
-     * @param <K> the type of keys maintained by this tree node, must be Comparable
+     * @param <K> the type of keys maintained by this tree node,
+     * must be Comparable
      * @param <V> the type of mapped values
      * @version 1.0
      */
@@ -58,13 +59,15 @@ public class PersistentTreeMap<K extends Comparable<K>, V>
         private final int height;
 
         /**
-         * Constructs a new tree node with the specified key, value, and children.
-         * The height is automatically calculated based on the children's heights.
+         * Constructs a new tree node with the specified
+         * key, value, and children.
+         * The height is automatically calculated based
+         * on the children's heights.
          *
-         * @param key the key for this node
-         * @param value the value for this node
-         * @param left the left child node
-         * @param right the right child node
+         * @param keyValue the key for this node
+         * @param valueValue the value for this node
+         * @param leftValue the left child node
+         * @param rightValue the right child node
          */
         TreeNode(final K keyValue, final V valueValue,
             final TreeNode<K, V> leftValue, final TreeNode<K, V> rightValue) {
