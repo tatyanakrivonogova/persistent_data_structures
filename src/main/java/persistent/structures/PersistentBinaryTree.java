@@ -51,14 +51,16 @@ public class PersistentBinaryTree<T extends Comparable<T>>
         private final int height;
 
         /**
-         * Constructs a new binary tree node with the specified value and children.
-         * The height is automatically calculated based on the children's heights.
+         * Constructs a new binary tree node with the specified
+         * value and children.
+         * The height is automatically calculated based on the
+         * children's heights.
          *
          * @param valueValue the value to store in this node
          * @param leftValue the left child node, may be null
          * @param rightValue the right child node, may be null
          */
-        public BinaryTreeNode(final T valueValue,
+        BinaryTreeNode(final T valueValue,
             final BinaryTreeNode<T> leftValue,
             final BinaryTreeNode<T> rightValue) {
             this.value = valueValue;
@@ -167,11 +169,13 @@ public class PersistentBinaryTree<T extends Comparable<T>>
             if (left != null ? !left.equals(that.left) : that.left != null) {
                 return false;
             }
-            return right != null ? right.equals(that.right) : that.right == null;
+            return right != null ? right.equals(that.right) :
+                that.right == null;
         }
 
         /**
-         * Returns a hash code value for this node based on its value and structure.
+         * Returns a hash code value for this node based on its
+         * value and structure.
          *
          * @return hash code value for this node
          */
