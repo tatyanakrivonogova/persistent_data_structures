@@ -182,10 +182,10 @@ public class PersistentBinaryTree<T extends Comparable<T>>
         @Override
         public int hashCode() {
             int result = value.hashCode();
-            int hashConstant = 31;
-            result = hashConstant * result + (left != null ? left.hashCode() : 0);
-            result = hashConstant * result + (right != null ? right.hashCode() : 0);
-            result = hashConstant * result + height;
+            final int mul = 31;
+            result = mul * result + (left != null ? left.hashCode() : 0);
+            result = mul * result + (right != null ? right.hashCode() : 0);
+            result = mul * result + height;
             return result;
         }
     }
