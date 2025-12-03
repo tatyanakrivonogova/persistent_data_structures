@@ -1,7 +1,5 @@
 package persistent.core;
 
-import java.util.UUID;
-
 /**
  * Abstract base class for persistent data structures that provides common
  * version management functionality. Concrete implementations should extend
