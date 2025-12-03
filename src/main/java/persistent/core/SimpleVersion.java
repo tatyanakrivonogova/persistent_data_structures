@@ -18,7 +18,7 @@ public class SimpleVersion implements Version {
     /**
      * Constructs a new SimpleVersion with the specified UUID.
      *
-     * @param id the unique version identifier as UUID
+     * @param idValue the unique version identifier as UUID
      */
     public SimpleVersion(final UUID idValue) {
         if (idValue == null) {
