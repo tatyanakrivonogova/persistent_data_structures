@@ -10,6 +10,9 @@ import java.util.UUID;
  * @version 2.0
  */
 public class SimpleVersion implements Version {
+    /**
+     * The unique version identifier as UUID.
+     */
     private final UUID id;
 
     /**
@@ -17,11 +20,11 @@ public class SimpleVersion implements Version {
      *
      * @param id the unique version identifier as UUID
      */
-    public SimpleVersion(UUID id) {
-        if (id == null) {
+    public SimpleVersion(final UUID idValue) {
+        if (idValue == null) {
             throw new IllegalArgumentException("ID cannot be null");
         }
-        this.id = id;
+        this.id = idValue;
     }
 
     /**
@@ -38,7 +41,7 @@ public class SimpleVersion implements Version {
      * @param uuidString the string representation of UUID
      * @throws IllegalArgumentException if the string is not a valid UUID
      */
-    public SimpleVersion(String uuidString) {
+    public SimpleVersion(final String uuidString) {
         this(UUID.fromString(uuidString));
     }
 
@@ -46,12 +49,12 @@ public class SimpleVersion implements Version {
      * {@inheritDoc}
      */
     @Override
-    public UUID getId() { 
-        return id; 
+    public UUID getId() {
+        return id;
     }
 
     /**
-     * Returns a string representation of this version in the format "Version{id}".
+     * Returns a string representation of this version "Version{id}".
      *
      * @return string representation of this version
      */
@@ -68,9 +71,13 @@ public class SimpleVersion implements Version {
      * @return true if the objects are equal, false otherwise
      */
     @Override
-    public boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (obj == null || getClass() != obj.getClass()) return false;
+    public boolean equals(final Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
         SimpleVersion that = (SimpleVersion) obj;
         return id.equals(that.id);
     }
