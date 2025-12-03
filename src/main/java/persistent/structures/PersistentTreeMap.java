@@ -66,12 +66,13 @@ public class PersistentTreeMap<K extends Comparable<K>, V>
          * @param left the left child node
          * @param right the right child node
          */
-        public TreeNode(K key, V value, TreeNode<K, V> left, TreeNode<K, V> right) {
-            this.key = key;
-            this.value = value;
-            this.left = left;
-            this.right = right;
-            this.height = 1 + Math.max(height(left), height(right));
+        TreeNode(final K keyValue, final V valueValue,
+            final TreeNode<K, V> leftValue, final TreeNode<K, V> rightValue) {
+            this.key = keyValue;
+            this.value = valueValue;
+            this.left = leftValue;
+            this.right = rightValue;
+            this.height = 1 + Math.max(height(leftValue), height(rightValue));
         }
 
         /**
@@ -85,7 +86,7 @@ public class PersistentTreeMap<K extends Comparable<K>, V>
 
         /**
          * Returns the value associated with this tree node.
-         * 
+         *
          * @return the value of this node
          */
         public V getValue() {
@@ -125,7 +126,7 @@ public class PersistentTreeMap<K extends Comparable<K>, V>
          * @param node the node to calculate height for, may be null
          * @return the height of the node, or 0 if the node is null
          */
-        private static int height(TreeNode<?, ?> node) {
+        private static int height(final TreeNode<?, ?> node) {
             return node == null ? 0 : node.getHeight();
         }
     }
