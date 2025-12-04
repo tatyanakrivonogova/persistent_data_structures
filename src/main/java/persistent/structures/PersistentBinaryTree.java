@@ -2,6 +2,7 @@ package persistent.structures;
 
 import persistent.core.AbstractPersistentStructure;
 import persistent.core.Version;
+import persistent.core.TransactionalVersion;
 
 import java.util.Iterator;
 import java.util.List;
@@ -10,12 +11,10 @@ import java.util.ArrayList;
 import java.util.function.Consumer;
 
 /**
- * A persistent binary search tree implementation.
- * Provides efficient storage and retrieval of comparable elements
- * with AVL balancing.
+ * A persistent binary search tree implementation with transaction support.
  *
  * @param <T> the type of elements in this tree, must be Comparable
- * @version 1.0
+ * @version 3.0
  */
 public class PersistentBinaryTree<T extends Comparable<T>>
         extends AbstractPersistentStructure<T> {
@@ -193,13 +192,13 @@ public class PersistentBinaryTree<T extends Comparable<T>>
     /**
      * The root node of the binary tree.
      */
-    private final BinaryTreeNode<T> root;
-
+    private BinaryTreeNode<T> root;
+    
     /**
      * The number of elements in the binary tree.
      */
-    private final int size;
-
+    private int size;
+    
     /**
      * Constructs an empty persistent binary tree.
      */
@@ -208,42 +207,92 @@ public class PersistentBinaryTree<T extends Comparable<T>>
         this.root = null;
         this.size = 0;
     }
-
+    
     /**
      * Private constructor for creating new versions of the tree.
-     *
-     * @param rootValue the root node of the tree
-     * @param sizeValue the size of the tree
-     * @param version the version identifier for this tree instance
      */
     private PersistentBinaryTree(final BinaryTreeNode<T> rootValue,
-        final int sizeValue, final Version version) {
+                                 final int sizeValue, final Version version) {
         super(version);
         this.root = rootValue;
         this.size = sizeValue;
     }
-
+    
+    /**
+     * Creates a deep copy of the current tree.
+     */
+    private PersistentBinaryTree<T> deepCopy() {
+        return new PersistentBinaryTree<>(this.root, this.size, this.getVersion());
+    }
+    
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void savePreTransactionState() {
+        this.preTransactionState = this.deepCopy();
+    }
+    
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void restoreFromPreTransactionState() {
+        if (preTransactionState instanceof PersistentBinaryTree) {
+            PersistentBinaryTree<T> savedState = (PersistentBinaryTree<T>) preTransactionState;
+            this.root = savedState.root;
+            this.size = savedState.size;
+            this.setVersion(savedState.getVersion());
+        }
+    }
+    
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void convertToFinalVersion() {
+        // Convert transactional version to final version
+        Version current = getVersion();
+        if (current instanceof TransactionalVersion) {
+            TransactionalVersion tv = (TransactionalVersion) current;
+            if (tv.isTransactional()) {
+                setVersion(new TransactionalVersion(tv.getId(), null, false, 0));
+            }
+        }
+    }
+    
     /**
      * Inserts the specified element into this tree.
+     * Transaction-aware: in transaction, modifications are isolated.
      *
      * @param value the element to be inserted
      * @return a new persistent tree containing the specified element
      */
     public PersistentBinaryTree<T> insert(final T value) {
         BinaryTreeNode<T> newRoot = insert(root, value);
-        boolean valueExists = newRoot == root && root != null
-                                && contains(value);
-
+        boolean valueExists = newRoot == root && root != null && contains(value);
+        
         Version newVersion = createNewVersion();
-        return new PersistentBinaryTree<>(
+        PersistentBinaryTree<T> result = new PersistentBinaryTree<>(
             newRoot,
             valueExists ? size : size + 1,
             newVersion
         );
+        
+        // If in transaction, update current instance
+        if (isInTransaction()) {
+            this.root = result.root;
+            this.size = result.size;
+            this.setVersion(newVersion);
+            return this;
+        }
+        
+        return result;
     }
-
+    
     /**
      * Removes the specified element from this tree if present.
+     * Transaction-aware: in transaction, modifications are isolated.
      *
      * @param value the element to be removed
      * @return a new persistent tree without the specified element
@@ -253,9 +302,23 @@ public class PersistentBinaryTree<T extends Comparable<T>>
         if (newRoot == root) {
             return this; // Value not found
         }
-
+        
         Version newVersion = createNewVersion();
-        return new PersistentBinaryTree<>(newRoot, size - 1, newVersion);
+        PersistentBinaryTree<T> result = new PersistentBinaryTree<>(
+            newRoot,
+            size - 1,
+            newVersion
+        );
+        
+        // If in transaction, update current instance
+        if (isInTransaction()) {
+            this.root = result.root;
+            this.size = result.size;
+            this.setVersion(newVersion);
+            return this;
+        }
+        
+        return result;
     }
 
     /**
@@ -571,6 +634,14 @@ public class PersistentBinaryTree<T extends Comparable<T>>
         List<T> result = new ArrayList<>();
         inOrderTraversal(root, result::add);
         return result;
+    }
+
+    /**
+     * Returns a snapshot of the current tree state.
+     * Useful for getting a consistent view during transactions.
+     */
+    public PersistentBinaryTree<T> snapshot() {
+        return this.deepCopy();
     }
 
     @Override
