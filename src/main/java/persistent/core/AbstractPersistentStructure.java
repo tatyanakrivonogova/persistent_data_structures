@@ -1,42 +1,52 @@
 package persistent.core;
 
+import java.util.UUID;
+
 /**
- * Abstract base class for persistent data structures that provides common
- * version management functionality. Concrete implementations should extend
- * this class to inherit basic version control capabilities.
+ * Abstract base class for persistent data structures with transaction support.
  *
  * @param <T> the type of elements in this structure
- * @version 2.0
+ * @version 3.0
  */
 public abstract class AbstractPersistentStructure<T>
-    implements PersistentStructure<T> {
+    implements TransactionalStructure<T> {
+    
     /**
      * The current version of this persistent structure.
      */
     private Version currentVersion;
-
+    
+    /**
+     * Transaction manager for this structure.
+     */
+    protected final TransactionManager transactionManager;
+    
+    /**
+     * State before transaction started (for rollback).
+     */
+    protected PersistentStructure<T> preTransactionState;
+    
     /**
      * Constructs a new abstract persistent structure with an initial version.
-     * The initial version uses a randomly generated UUID.
      */
     protected AbstractPersistentStructure() {
-        this.currentVersion = new SimpleVersion(); // Uses random UUID
+        this.currentVersion = new TransactionalVersion();
+        this.transactionManager = new TransactionManager();
+        this.preTransactionState = null;
     }
-
+    
     /**
      * Constructs a new abstract persistent structure with specified version.
-     * This is used when creating new versions of existing structures.
-     *
-     * @param version the version to assign to this structure
-     * @throws IllegalArgumentException if version is null
      */
     protected AbstractPersistentStructure(final Version version) {
         if (version == null) {
             throw new IllegalArgumentException("Version cannot be null");
         }
         this.currentVersion = version;
+        this.transactionManager = new TransactionManager();
+        this.preTransactionState = null;
     }
-
+    
     /**
      * {@inheritDoc}
      */
@@ -44,17 +54,31 @@ public abstract class AbstractPersistentStructure<T>
     public Version getVersion() {
         return currentVersion;
     }
-
+    
     /**
      * Creates a new version identifier for use when modifying the structure.
-     * Each new version gets a randomly generated UUID.
+     * If in transaction, creates a transactional version.
      *
-     * @return a new Version with a unique UUID
+     * @return a new Version
      */
     protected Version createNewVersion() {
-        return new SimpleVersion(); // Creates new random UUID
+        if (transactionManager.isInTransaction()) {
+            UUID transactionId = transactionManager.getCurrentTransactionId();
+            int sequence = transactionManager.getNextTransactionSequence();
+            return new TransactionalVersion(transactionId, sequence);
+        } else {
+            return new TransactionalVersion();
+        }
     }
-
+    
+    /**
+     * Sets the current version.
+     * Used internally after operations.
+     */
+    protected void setVersion(Version version) {
+        this.currentVersion = version;
+    }
+    
     /**
      * {@inheritDoc}
      */
@@ -62,4 +86,88 @@ public abstract class AbstractPersistentStructure<T>
     public boolean isEmpty() {
         return size() == 0;
     }
+    
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void beginTransaction() {
+        if (!transactionManager.isInTransaction()) {
+            // Save current state for potential rollback
+            savePreTransactionState();
+        }
+        transactionManager.beginTransaction();
+    }
+    
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void commitTransaction() {
+        if (transactionManager.isInTransaction()) {
+            transactionManager.commitTransaction();
+            
+            // If this was the outermost transaction, convert to final version
+            if (!transactionManager.isInTransaction()) {
+                convertToFinalVersion();
+                clearPreTransactionState();
+            }
+        }
+    }
+    
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void rollbackTransaction() {
+        if (transactionManager.isInTransaction()) {
+            transactionManager.rollbackTransaction();
+            
+            // If this was the outermost transaction, restore pre-transaction state
+            if (!transactionManager.isInTransaction() && preTransactionState != null) {
+                restoreFromPreTransactionState();
+            }
+        }
+    }
+    
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean isInTransaction() {
+        return transactionManager.isInTransaction();
+    }
+    
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public PersistentStructure<T> getPreTransactionState() {
+        return preTransactionState;
+    }
+    
+    /**
+     * Saves the current state before transaction begins.
+     * Must be implemented by subclasses.
+     */
+    protected abstract void savePreTransactionState();
+    
+    /**
+     * Restores state from pre-transaction snapshot.
+     * Must be implemented by subclasses.
+     */
+    protected abstract void restoreFromPreTransactionState();
+    
+    /**
+     * Clears the pre-transaction state.
+     */
+    protected void clearPreTransactionState() {
+        this.preTransactionState = null;
+    }
+    
+    /**
+     * Converts transactional versions to final versions.
+     * Must be implemented by subclasses.
+     */
+    protected abstract void convertToFinalVersion();
 }
