@@ -2,7 +2,6 @@ package persistent.structures;
 
 import persistent.core.AbstractPersistentStructure;
 import persistent.core.Version;
-import persistent.utils.BinaryTreeNode;
 
 import java.util.Iterator;
 import java.util.List;
@@ -20,6 +19,177 @@ import java.util.function.Consumer;
  */
 public class PersistentBinaryTree<T extends Comparable<T>>
         extends AbstractPersistentStructure<T> {
+    /**
+     * A node for binary tree implementations of persistent structures.
+     * This class represents a node in a balanced binary search tree with
+     * height information for maintaining tree balance. The node is immutable
+     * to ensure thread safety and persistence.
+     *
+     * @param <T> the type of values stored in the node,
+     * must be Comparable for ordering
+     * @version 1.0
+     */
+    private static class BinaryTreeNode<T extends Comparable<T>> {
+        /**
+         * The value stored in this node.
+         */
+        private final T value;
+
+        /**
+         * The left child of this node.
+         */
+        private final BinaryTreeNode<T> left;
+
+        /**
+         * The right child of this node.
+         */
+        private final BinaryTreeNode<T> right;
+
+        /**
+         * The height of the subtree rooted at this node.
+         */
+        private final int height;
+
+        /**
+         * Constructs a new binary tree node with the specified
+         * value and children.
+         * The height is automatically calculated based on the
+         * children's heights.
+         *
+         * @param valueValue the value to store in this node
+         * @param leftValue the left child node, may be null
+         * @param rightValue the right child node, may be null
+         */
+        BinaryTreeNode(final T valueValue,
+            final BinaryTreeNode<T> leftValue,
+            final BinaryTreeNode<T> rightValue) {
+            this.value = valueValue;
+            this.left = leftValue;
+            this.right = rightValue;
+            this.height = 1 + Math.max(height(leftValue), height(rightValue));
+        }
+
+        /**
+         * Calculates the height of the given tree node.
+         *
+         * @param <T> the type of elements stored in the binary node
+         * @param node the node to calculate height for, may be null
+         * @return the height of the node, or 0 if the node is null
+         */
+        private static <T extends Comparable<T>> int
+            height(final BinaryTreeNode<T> node) {
+            return node == null ? 0 : node.getHeight();
+        }
+
+        /**
+         * Returns the value stored in this node.
+         *
+         * @return the value of this node
+         */
+        public T getValue() {
+            return value;
+        }
+
+        /**
+         * Returns the left child of this node.
+         *
+         * @return the left child node, or null if no left child exists
+         */
+        public BinaryTreeNode<T> getLeft() {
+            return left;
+        }
+
+        /**
+         * Returns the right child of this node.
+         *
+         * @return the right child node, or null if no right child exists
+         */
+        public BinaryTreeNode<T> getRight() {
+            return right;
+        }
+
+        /**
+         * Returns the height of the subtree rooted at this node.
+         * The height of a node is the number of edges on the longest path
+         * from the node to a leaf. A leaf node has height 1.
+         *
+         * @return the height of this node
+         */
+        public int getHeight() {
+            return height;
+        }
+
+        /**
+         * Returns the balance factor of this node.
+         * The balance factor is defined as the difference between the height
+         * of the left subtree and the height of the right subtree.
+         *
+         * @return the balance factor (left height - right height)
+         */
+        public int getBalanceFactor() {
+            return height(left) - height(right);
+        }
+
+        /**
+         * Returns a string representation of this node".
+         *
+         * @return string representation of this node
+         */
+        @Override
+        public String toString() {
+            return value + "[" + height + "]";
+        }
+
+        /**
+         * Compares this node with another object for equality.
+         * Two BinaryTreeNode objects are equal if they have the same value,
+         * same left subtree, and same right subtree.
+         *
+         * @param obj the object to compare with
+         * @return true if the objects are equal, false otherwise
+         */
+        @Override
+        @SuppressWarnings("unchecked")
+        public boolean equals(final Object obj) {
+            if (this == obj) {
+                return true;
+            }
+            if (obj == null || getClass() != obj.getClass()) {
+                return false;
+            }
+
+            BinaryTreeNode<T> that = (BinaryTreeNode<T>) obj;
+
+            if (height != that.height) {
+                return false;
+            }
+            if (!value.equals(that.value)) {
+                return false;
+            }
+            if (left != null ? !left.equals(that.left) : that.left != null) {
+                return false;
+            }
+            return right != null ? right.equals(that.right)
+                : that.right == null;
+        }
+
+        /**
+         * Returns a hash code value for this node based on its
+         * value and structure.
+         *
+         * @return hash code value for this node
+         */
+        @Override
+        public int hashCode() {
+            int result = value.hashCode();
+            final int mul = 31;
+            result = mul * result + (left != null ? left.hashCode() : 0);
+            result = mul * result + (right != null ? right.hashCode() : 0);
+            result = mul * result + height;
+            return result;
+        }
+    }
+
     /**
      * The root node of the binary tree.
      */
