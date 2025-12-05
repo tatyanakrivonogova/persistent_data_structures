@@ -2,6 +2,7 @@ package persistent.structures;
 
 import persistent.core.AbstractPersistentStructure;
 import persistent.core.Version;
+import persistent.core.TransactionalVersion;
 
 import java.util.Iterator;
 import java.util.List;
@@ -12,12 +13,11 @@ import java.util.Map;
 import java.util.AbstractMap;
 
 /**
- * A persistent associative array based on AVL tree.
- * Provides efficient key-value storage with logarithmic time operations.
+ * A persistent associative array based on AVL tree with transaction support.
  *
  * @param <K> the type of keys maintained by this map, must be Comparable
  * @param <V> the type of mapped values
- * @version 1.0
+ * @version 3.0
  */
 public class PersistentTreeMap<K extends Comparable<K>, V>
     extends AbstractPersistentStructure<Map.Entry<K, V>> {
@@ -137,12 +137,12 @@ public class PersistentTreeMap<K extends Comparable<K>, V>
     /**
      * The root node of the tree.
      */
-    private final TreeNode<K, V> root;
+    private TreeNode<K, V> root;
 
     /**
      * The number of elements in the binary tree.
      */
-    private final int size;
+    private int size;
 
     /**
      * Constructs an empty persistent tree map.
@@ -155,10 +155,15 @@ public class PersistentTreeMap<K extends Comparable<K>, V>
 
     /**
      * Private constructor for creating new versions of the map.
+     * Creates a new persistent tree map instance with specified root
+     * node, size, and version.
+     * Used internally for creating modified versions while
+     * maintaining immutability.
      *
-     * @param rootValue the root node of TreeMap
-     * @param sizeValue the number of nodes in TreeMap
-     * @param versionValue the version of tree
+     * @param rootValue     the root node of the tree,
+     * can be null for empty map
+     * @param sizeValue     the number of key-value pairs in the map
+     * @param versionValue  the version identifier for this map instance
      */
     private PersistentTreeMap(final TreeNode<K, V> rootValue,
         final int sizeValue, final Version versionValue) {
@@ -168,7 +173,59 @@ public class PersistentTreeMap<K extends Comparable<K>, V>
     }
 
     /**
+     * Creates a deep copy of the current map.
+     * Creates a new persistent tree map instance that shares the structure
+     * but has independent version tracking. Used internally for creating
+     * new versions while preserving immutability.
+     *
+     * @return a new PersistentTreeMap instance with the same
+     * structure and size but separate version identity
+     */
+    private PersistentTreeMap<K, V> deepCopy() {
+        return new PersistentTreeMap<>(this.root, this.size, this.getVersion());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void savePreTransactionState() {
+        this.setPreTransactionState(this.deepCopy());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void restoreFromPreTransactionState() {
+        if (this.getPreTransactionState() instanceof PersistentTreeMap) {
+            PersistentTreeMap<K, V> savedState =
+                (PersistentTreeMap<K, V>) this.getPreTransactionState();
+            this.root = savedState.root;
+            this.size = savedState.size;
+            this.setVersion(savedState.getVersion());
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void convertToFinalVersion() {
+        // Convert transactional version to final version
+        Version current = getVersion();
+        if (current instanceof TransactionalVersion) {
+            TransactionalVersion tv = (TransactionalVersion) current;
+            if (tv.isTransactional()) {
+                setVersion(new TransactionalVersion(tv.getId(), null,
+                    false, 0));
+            }
+        }
+    }
+
+    /**
      * Associates the specified value with the specified key in this map.
+     * Transaction-aware: in transaction, modifications are isolated.
      *
      * @param key the key with which the specified value is to be associated
      * @param value the value to be associated with the specified key
@@ -179,15 +236,26 @@ public class PersistentTreeMap<K extends Comparable<K>, V>
         boolean keyExists = get(root, key) != null;
 
         Version newVersion = createNewVersion();
-        return new PersistentTreeMap<>(
+        PersistentTreeMap<K, V> result = new PersistentTreeMap<>(
             newRoot,
             keyExists ? size : size + 1,
             newVersion
         );
+
+        // If in transaction, update current instance
+        if (isInTransaction()) {
+            this.root = result.root;
+            this.size = result.size;
+            this.setVersion(newVersion);
+            return this;
+        }
+
+        return result;
     }
 
     /**
      * Removes the mapping for the specified key from this map if present.
+     * Transaction-aware: in transaction, modifications are isolated.
      *
      * @param key the key whose mapping is to be removed from the map
      * @return a new persistent map without the specified key mapping
@@ -199,7 +267,21 @@ public class PersistentTreeMap<K extends Comparable<K>, V>
 
         TreeNode<K, V> newRoot = remove(root, key);
         Version newVersion = createNewVersion();
-        return new PersistentTreeMap<>(newRoot, size - 1, newVersion);
+        PersistentTreeMap<K, V> result = new PersistentTreeMap<>(
+            newRoot,
+            size - 1,
+            newVersion
+        );
+
+        // If in transaction, update current instance
+        if (isInTransaction()) {
+            this.root = result.root;
+            this.size = result.size;
+            this.setVersion(newVersion);
+            return this;
+        }
+
+        return result;
     }
 
     /**
@@ -516,6 +598,19 @@ public class PersistentTreeMap<K extends Comparable<K>, V>
                 node.getKey(), node.getValue()));
             inOrderTraversal(node.getRight(), result);
         }
+    }
+
+    /**
+     * Returns a snapshot of the current map state.
+     * Useful for getting a consistent view during transactions.
+     * Creates an independent copy of the map that won't be affected
+     * by subsequent modifications to the original.
+     *
+     * @return a new PersistentTreeMap instance representing
+     * the current state as an immutable snapshot
+     */
+    public PersistentTreeMap<K, V> snapshot() {
+        return this.deepCopy();
     }
 
     @Override
