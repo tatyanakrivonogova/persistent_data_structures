@@ -8,7 +8,8 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 /**
- * Persistent, immutable doubly linked list implementation with transaction support.
+ * Persistent, immutable doubly linked list implementation
+ * with transaction support.
  *
  * @param <E> element type
  * @version 3.0
@@ -59,9 +60,12 @@ public final class PersistentDoublyLinkedList<E extends Comparable<E>>
         public void setNext(final Node<T> newNext) {
             this.next = newNext;
         }
-        
+
         /**
          * Creates a deep copy of this node.
+         *
+         * @return a new Node instance with the same value and references
+         * to the same previous and next nodes as this node
          */
         public Node<T> deepCopy() {
             return new Node<>(value, prev, next);
@@ -105,42 +109,46 @@ public final class PersistentDoublyLinkedList<E extends Comparable<E>>
         this.tail = null;
         this.size = 0;
     }
-    
+
     /**
      * Creates a deep copy of the current list.
+     * 
+     * @return a new {@code PersistentDoublyLinkedList} instance that is a deep copy
+     * of the current list, containing copies of all nodes with their
+     * structure preserved
      */
     private PersistentDoublyLinkedList<E> deepCopy() {
         if (head == null) {
             return new PersistentDoublyLinkedList<>(null, null, 0, getVersion());
         }
-        
+
         // Deep copy all nodes
         Node<E> newHead = null;
         Node<E> newTail = null;
         Node<E> current = head;
         Node<E> prevCopy = null;
-        
+
         while (current != null) {
             Node<E> nodeCopy = current.deepCopy();
-            
+
             if (newHead == null) {
                 newHead = nodeCopy;
             }
-            
+
             if (prevCopy != null) {
                 prevCopy.setNext(nodeCopy);
                 nodeCopy.setPrev(prevCopy);
             }
-            
+
             prevCopy = nodeCopy;
             current = current.getNext();
         }
-        
+
         newTail = prevCopy;
-        
+
         return new PersistentDoublyLinkedList<>(newHead, newTail, size, getVersion());
     }
-    
+
     /**
      * {@inheritDoc}
      */
@@ -148,7 +156,7 @@ public final class PersistentDoublyLinkedList<E extends Comparable<E>>
     protected void savePreTransactionState() {
         this.preTransactionState = this.deepCopy();
     }
-    
+
     /**
      * {@inheritDoc}
      */
@@ -164,7 +172,7 @@ public final class PersistentDoublyLinkedList<E extends Comparable<E>>
             this.setVersion(savedState.getVersion());
         }
     }
-    
+
     /**
      * {@inheritDoc}
      */
@@ -248,7 +256,7 @@ public final class PersistentDoublyLinkedList<E extends Comparable<E>>
             PersistentDoublyLinkedList<E> result = new PersistentDoublyLinkedList<>(
                     newNode, newNode, 1, version
             );
-            
+
             // If in transaction, update current instance
             if (isInTransaction()) {
                 this.head = result.head;
@@ -257,7 +265,7 @@ public final class PersistentDoublyLinkedList<E extends Comparable<E>>
                 this.setVersion(version);
                 return this;
             }
-            
+
             return result;
         }
 
@@ -301,7 +309,7 @@ public final class PersistentDoublyLinkedList<E extends Comparable<E>>
         PersistentDoublyLinkedList<E> result = new PersistentDoublyLinkedList<>(
                 newHeadRef[0], prevNewNode, size + 1, version
         );
-        
+
         // If in transaction, update current instance
         if (isInTransaction()) {
             this.head = result.head;
@@ -310,7 +318,7 @@ public final class PersistentDoublyLinkedList<E extends Comparable<E>>
             this.setVersion(version);
             return this;
         }
-        
+
         return result;
     }
 
@@ -353,7 +361,7 @@ public final class PersistentDoublyLinkedList<E extends Comparable<E>>
             PersistentDoublyLinkedList<E> result = new PersistentDoublyLinkedList<>(
                     null, null, 0, version
             );
-            
+
             // If in transaction, update current instance
             if (isInTransaction()) {
                 this.head = result.head;
@@ -362,7 +370,7 @@ public final class PersistentDoublyLinkedList<E extends Comparable<E>>
                 this.setVersion(version);
                 return this;
             }
-            
+
             return result;
         }
 
@@ -389,7 +397,7 @@ public final class PersistentDoublyLinkedList<E extends Comparable<E>>
         PersistentDoublyLinkedList<E> result = new PersistentDoublyLinkedList<>(
                 newHeadRef[0], prevNewNode, size - 1, version
         );
-        
+
         // If in transaction, update current instance
         if (isInTransaction()) {
             this.head = result.head;
@@ -398,10 +406,10 @@ public final class PersistentDoublyLinkedList<E extends Comparable<E>>
             this.setVersion(version);
             return this;
         }
-        
+
         return result;
     }
-    
+
     /**
      * Returns a snapshot of the current list state.
      * Useful for getting a consistent view during transactions.
