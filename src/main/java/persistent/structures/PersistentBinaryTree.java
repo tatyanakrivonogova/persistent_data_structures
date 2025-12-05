@@ -237,7 +237,8 @@ public class PersistentBinaryTree<T extends Comparable<T>>
      * structure and size but separate version identity
      */
     private PersistentBinaryTree<T> deepCopy() {
-        return new PersistentBinaryTree<>(this.root, this.size, this.getVersion());
+        return new PersistentBinaryTree<>(this.root, this.size,
+            this.getVersion());
     }
 
     /**
@@ -254,7 +255,8 @@ public class PersistentBinaryTree<T extends Comparable<T>>
     @Override
     protected void restoreFromPreTransactionState() {
         if (preTransactionState instanceof PersistentBinaryTree) {
-            PersistentBinaryTree<T> savedState = (PersistentBinaryTree<T>) preTransactionState;
+            PersistentBinaryTree<T> savedState =
+                (PersistentBinaryTree<T>) preTransactionState;
             this.root = savedState.root;
             this.size = savedState.size;
             this.setVersion(savedState.getVersion());
@@ -271,7 +273,8 @@ public class PersistentBinaryTree<T extends Comparable<T>>
         if (current instanceof TransactionalVersion) {
             TransactionalVersion tv = (TransactionalVersion) current;
             if (tv.isTransactional()) {
-                setVersion(new TransactionalVersion(tv.getId(), null, false, 0));
+                setVersion(new TransactionalVersion(tv.getId(),
+                    null, false, 0));
             }
         }
     }
@@ -285,7 +288,8 @@ public class PersistentBinaryTree<T extends Comparable<T>>
      */
     public PersistentBinaryTree<T> insert(final T value) {
         BinaryTreeNode<T> newRoot = insert(root, value);
-        boolean valueExists = newRoot == root && root != null && contains(value);
+        boolean valueExists = newRoot == root && root != null
+            && contains(value);
 
         Version newVersion = createNewVersion();
         PersistentBinaryTree<T> result = new PersistentBinaryTree<>(
@@ -301,7 +305,7 @@ public class PersistentBinaryTree<T extends Comparable<T>>
             this.setVersion(newVersion);
             return this;
         }
-    
+
         return result;
     }
 

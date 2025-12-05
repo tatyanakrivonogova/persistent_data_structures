@@ -155,9 +155,18 @@ public class PersistentTreeMap<K extends Comparable<K>, V>
 
     /**
      * Private constructor for creating new versions of the map.
+     * Creates a new persistent tree map instance with specified root
+     * node, size, and version.
+     * Used internally for creating modified versions while
+     * maintaining immutability.
+     *
+     * @param rootValue     the root node of the tree,
+     * can be null for empty map
+     * @param sizeValue     the number of key-value pairs in the map
+     * @param versionValue  the version identifier for this map instance
      */
     private PersistentTreeMap(final TreeNode<K, V> rootValue,
-                              final int sizeValue, final Version versionValue) {
+        final int sizeValue, final Version versionValue) {
         super(versionValue);
         this.root = rootValue;
         this.size = sizeValue;
@@ -165,6 +174,12 @@ public class PersistentTreeMap<K extends Comparable<K>, V>
 
     /**
      * Creates a deep copy of the current map.
+     * Creates a new persistent tree map instance that shares the structure
+     * but has independent version tracking. Used internally for creating
+     * new versions while preserving immutability.
+     *
+     * @return a new PersistentTreeMap instance with the same
+     * structure and size but separate version identity
      */
     private PersistentTreeMap<K, V> deepCopy() {
         return new PersistentTreeMap<>(this.root, this.size, this.getVersion());
@@ -588,6 +603,11 @@ public class PersistentTreeMap<K extends Comparable<K>, V>
     /**
      * Returns a snapshot of the current map state.
      * Useful for getting a consistent view during transactions.
+     * Creates an independent copy of the map that won't be affected
+     * by subsequent modifications to the original.
+     *
+     * @return a new PersistentTreeMap instance representing
+     * the current state as an immutable snapshot
      */
     public PersistentTreeMap<K, V> snapshot() {
         return this.deepCopy();
