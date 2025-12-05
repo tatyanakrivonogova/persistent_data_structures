@@ -41,7 +41,8 @@ public class TransactionalVersion extends SimpleVersion {
      * @param transactionIdValue identifier of the transaction
      * @param transactionSequenceValue sequential number within transaction
      */
-    public TransactionalVersion(final UUID transactionIdValue, final int transactionSequenceValue) {
+    public TransactionalVersion(final UUID transactionIdValue,
+        final int transactionSequenceValue) {
         super();
         this.transactionId = transactionIdValue;
         this.isTransactional = true;
@@ -58,7 +59,8 @@ public class TransactionalVersion extends SimpleVersion {
      * @param transactionSequenceValue sequential number within transaction
      */
     public TransactionalVersion(final UUID id, final UUID transactionIdValue,
-        final boolean isTransactionalValue, final int transactionSequenceValue) {
+        final boolean isTransactionalValue,
+        final int transactionSequenceValue) {
         super(id);
         this.transactionId = transactionIdValue;
         this.isTransactional = isTransactionalValue;
