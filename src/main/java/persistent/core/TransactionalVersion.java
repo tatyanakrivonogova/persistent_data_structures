@@ -43,7 +43,7 @@ public class TransactionalVersion extends SimpleVersion {
      */
     public TransactionalVersion(final UUID transactionIdValue, final int transactionSequenceValue) {
         super();
-        this.transactionId = transactionId;
+        this.transactionId = transactionIdValue;
         this.isTransactional = true;
         this.transactionSequence = transactionSequenceValue;
     }
