@@ -19,22 +19,28 @@ public class TransactionManager {
      * Contains transaction identifier, sequence counter and context.
      */
     private static class TransactionState {
-        /** Unique transaction identifier */
+        /**
+         * Unique transaction identifier
+         */
         private final UUID transactionId;
 
-        /** Counter for generating sequential numbers within transaction */
-        int sequenceCounter;
+        /**
+         * Counter for generating sequential numbers within transaction
+         */
+        private int sequenceCounter;
 
-        /** Transaction context for storing arbitrary data */
-        final Map<String, Object> context;
+        /**
+         * Transaction context for storing arbitrary data
+         */
+        private final Map<String, Object> context;
 
         /**
          * Creates new transaction state with specified identifier.
          *
-         * @param transactionId unique transaction identifier
+         * @param transactionIdValue unique transaction identifier
          */
-        TransactionState(UUID transactionId) {
-            this.transactionId = transactionId;
+        TransactionState(final UUID transactionIdValue) {
+            this.transactionId = transactionIdValue;
             this.sequenceCounter = 0;
             this.context = new HashMap<>();
         }
@@ -49,10 +55,14 @@ public class TransactionManager {
         }
     }
 
-    /** Stack of active transactions */
+    /**
+     * Stack of active transactions
+     */
     private final Deque<TransactionState> transactionStack;
 
-    /** Thread-local storage for current transaction state */
+    /**
+     * Thread-local storage for current transaction state
+     */
     private final ThreadLocal<TransactionState> currentTransaction;
 
     /**
@@ -141,7 +151,7 @@ public class TransactionManager {
      * @param key the key with which the value is to be associated
      * @param value the value to be stored
      */
-    public void putInContext(String key, Object value) {
+    public void putInContext(final String key, final Object value) {
         TransactionState state = currentTransaction.get();
         if (state != null) {
             state.context.put(key, value);
@@ -152,9 +162,10 @@ public class TransactionManager {
      * Retrieves value from transaction context.
      *
      * @param key the key whose associated value is to be returned
-     * @return the value associated with specified key, or null if no active transaction or key not found
+     * @return the value associated with specified key,
+     * or null if no active transaction or key not found
      */
-    public Object getFromContext(String key) {
+    public Object getFromContext(final String key) {
         TransactionState state = currentTransaction.get();
         return state != null ? state.context.get(key) : null;
     }

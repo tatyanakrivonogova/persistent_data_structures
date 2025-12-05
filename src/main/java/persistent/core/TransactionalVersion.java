@@ -13,17 +13,17 @@ public class TransactionalVersion extends SimpleVersion {
      * Transaction identifier (null if not in transaction).
      */
     private final UUID transactionId;
-    
+
     /**
      * Flag indicating this is a temporary version within a transaction.
      */
     private final boolean isTransactional;
-    
+
     /**
      * Sequential number within the transaction.
      */
     private final int transactionSequence;
-    
+
     /**
      * Creates a new regular version (non-transactional).
      * Used for operations outside of transactions.
@@ -34,36 +34,37 @@ public class TransactionalVersion extends SimpleVersion {
         this.isTransactional = false;
         this.transactionSequence = 0;
     }
-    
+
     /**
      * Creates a new transactional version.
      *
-     * @param transactionId identifier of the transaction
-     * @param transactionSequence sequential number within transaction
+     * @param transactionIdValue identifier of the transaction
+     * @param transactionSequenceValue sequential number within transaction
      */
-    public TransactionalVersion(UUID transactionId, int transactionSequence) {
+    public TransactionalVersion(final UUID transactionIdValue, final int transactionSequenceValue) {
         super();
         this.transactionId = transactionId;
         this.isTransactional = true;
-        this.transactionSequence = transactionSequence;
+        this.transactionSequence = transactionSequenceValue;
     }
-    
+
     /**
-     * Creates a version from existing UUID with specified transaction properties.
+     * Creates a version from existing UUID with specified
+     * transaction properties.
      *
      * @param id version identifier
-     * @param transactionId transaction identifier (can be null)
-     * @param isTransactional flag indicating transactional status
-     * @param transactionSequence sequential number within transaction
+     * @param transactionIdValue transaction identifier (can be null)
+     * @param isTransactionalValue flag indicating transactional status
+     * @param transactionSequenceValue sequential number within transaction
      */
-    public TransactionalVersion(UUID id, UUID transactionId, 
-                               boolean isTransactional, int transactionSequence) {
+    public TransactionalVersion(final UUID id, final UUID transactionIdValue,
+        final boolean isTransactionalValue, final int transactionSequenceValue) {
         super(id);
-        this.transactionId = transactionId;
-        this.isTransactional = isTransactional;
-        this.transactionSequence = transactionSequence;
+        this.transactionId = transactionIdValue;
+        this.isTransactional = isTransactionalValue;
+        this.transactionSequence = transactionSequenceValue;
     }
-    
+
     /**
      * Returns the transaction identifier.
      *
@@ -72,16 +73,17 @@ public class TransactionalVersion extends SimpleVersion {
     public UUID getTransactionId() {
         return transactionId;
     }
-    
+
     /**
      * Checks if this version is transactional.
      *
-     * @return true if this version was created within a transaction, false otherwise
+     * @return true if this version was created within a transaction,
+     * false otherwise
      */
     public boolean isTransactional() {
         return isTransactional;
     }
-    
+
     /**
      * Returns the sequential number within the transaction.
      *
@@ -90,7 +92,7 @@ public class TransactionalVersion extends SimpleVersion {
     public int getTransactionSequence() {
         return transactionSequence;
     }
-    
+
     /**
      * Returns string representation of the version.
      * Includes transaction information for transactional versions.
@@ -101,8 +103,8 @@ public class TransactionalVersion extends SimpleVersion {
     public String toString() {
         String base = super.toString();
         if (isTransactional) {
-            return base + "{transaction=" + transactionId + 
-                   ", seq=" + transactionSequence + "}";
+            return base + "{transaction=" + transactionId
+                + ", seq=" + transactionSequence + "}";
         }
         return base;
     }

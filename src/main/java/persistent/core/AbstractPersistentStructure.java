@@ -38,7 +38,7 @@ public abstract class AbstractPersistentStructure<T>
     /**
      * Constructs a new abstract persistent structure with specified version.
      *
-     * @param <T> version of structure
+     * @param version version of structure
      */
     protected AbstractPersistentStructure(final Version version) {
         if (version == null) {
@@ -77,7 +77,7 @@ public abstract class AbstractPersistentStructure<T>
      * Sets the current version.
      * Used internally after operations.
      *
-     * @param <T> version of structure
+     * @param version version of structure
      */
     protected void setVersion(final Version version) {
         this.currentVersion = version;
