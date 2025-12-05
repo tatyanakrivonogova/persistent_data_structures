@@ -190,7 +190,7 @@ public class PersistentTreeMap<K extends Comparable<K>, V>
      */
     @Override
     protected void savePreTransactionState() {
-        this.preTransactionState = this.deepCopy();
+        this.setPreTransactionState(this.deepCopy());
     }
 
     /**
@@ -198,9 +198,9 @@ public class PersistentTreeMap<K extends Comparable<K>, V>
      */
     @Override
     protected void restoreFromPreTransactionState() {
-        if (preTransactionState instanceof PersistentTreeMap) {
+        if (this.getPreTransactionState() instanceof PersistentTreeMap) {
             PersistentTreeMap<K, V> savedState =
-                (PersistentTreeMap<K, V>) preTransactionState;
+                (PersistentTreeMap<K, V>) this.getPreTransactionState();
             this.root = savedState.root;
             this.size = savedState.size;
             this.setVersion(savedState.getVersion());
