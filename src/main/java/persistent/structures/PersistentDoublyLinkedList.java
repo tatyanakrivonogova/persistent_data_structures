@@ -156,7 +156,7 @@ public final class PersistentDoublyLinkedList<E extends Comparable<E>>
      */
     @Override
     protected void savePreTransactionState() {
-        this.preTransactionState = this.deepCopy();
+        this.setPreTransactionState(this.deepCopy());
     }
 
     /**
@@ -164,10 +164,10 @@ public final class PersistentDoublyLinkedList<E extends Comparable<E>>
      */
     @Override
     protected void restoreFromPreTransactionState() {
-        if (preTransactionState instanceof PersistentDoublyLinkedList) {
+        if (this.getPreTransactionState() instanceof PersistentDoublyLinkedList) {
             @SuppressWarnings("unchecked")
             PersistentDoublyLinkedList<E> savedState =
-                (PersistentDoublyLinkedList<E>) preTransactionState;
+                (PersistentDoublyLinkedList<E>) this.getPreTransactionState();
             this.head = savedState.head;
             this.tail = savedState.tail;
             this.size = savedState.size;

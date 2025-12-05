@@ -19,12 +19,12 @@ public abstract class AbstractPersistentStructure<T>
     /**
      * Transaction manager for this structure.
      */
-    protected final TransactionManager transactionManager;
+    private final TransactionManager transactionManager;
 
     /**
      * State before transaction started (for rollback).
      */
-    protected PersistentStructure<T> preTransactionState;
+    private PersistentStructure<T> preTransactionState;
 
     /**
      * Constructs a new abstract persistent structure with an initial version.
@@ -150,6 +150,16 @@ public abstract class AbstractPersistentStructure<T>
     @Override
     public PersistentStructure<T> getPreTransactionState() {
         return preTransactionState;
+    }
+
+    /**
+     * Sets the pre-transaction state.
+     *
+     * @param preTransactionState the state to save for rollback
+     */
+    protected void setPreTransactionState(
+            final PersistentStructure<T> preTransactionState) {
+        this.preTransactionState = preTransactionState;
     }
 
     /**

@@ -246,7 +246,7 @@ public class PersistentBinaryTree<T extends Comparable<T>>
      */
     @Override
     protected void savePreTransactionState() {
-        this.preTransactionState = this.deepCopy();
+        this.setPreTransactionState(this.deepCopy());
     }
 
     /**
@@ -254,9 +254,9 @@ public class PersistentBinaryTree<T extends Comparable<T>>
      */
     @Override
     protected void restoreFromPreTransactionState() {
-        if (preTransactionState instanceof PersistentBinaryTree) {
+        if (this.getPreTransactionState() instanceof PersistentBinaryTree) {
             PersistentBinaryTree<T> savedState =
-                (PersistentBinaryTree<T>) preTransactionState;
+                (PersistentBinaryTree<T>) this.getPreTransactionState();
             this.root = savedState.root;
             this.size = savedState.size;
             this.setVersion(savedState.getVersion());
