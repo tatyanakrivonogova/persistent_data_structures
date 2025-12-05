@@ -155,11 +155,11 @@ public abstract class AbstractPersistentStructure<T>
     /**
      * Sets the pre-transaction state.
      *
-     * @param preTransactionState the state to save for rollback
+     * @param preTransactionStateValue the state to save for rollback
      */
     protected void setPreTransactionState(
-            final PersistentStructure<T> preTransactionState) {
-        this.preTransactionState = preTransactionState;
+            final PersistentStructure<T> preTransactionStateValue) {
+        this.preTransactionState = preTransactionStateValue;
     }
 
     /**
