@@ -10,22 +10,22 @@ import java.util.UUID;
  */
 public abstract class AbstractPersistentStructure<T>
     implements TransactionalStructure<T> {
-    
+
     /**
      * The current version of this persistent structure.
      */
     private Version currentVersion;
-    
+
     /**
      * Transaction manager for this structure.
      */
-    protected final TransactionManager transactionManager;
-    
+    private final TransactionManager transactionManager;
+
     /**
      * State before transaction started (for rollback).
      */
-    protected PersistentStructure<T> preTransactionState;
-    
+    private PersistentStructure<T> preTransactionState;
+
     /**
      * Constructs a new abstract persistent structure with an initial version.
      */
@@ -34,9 +34,11 @@ public abstract class AbstractPersistentStructure<T>
         this.transactionManager = new TransactionManager();
         this.preTransactionState = null;
     }
-    
+
     /**
      * Constructs a new abstract persistent structure with specified version.
+     *
+     * @param <T> version of structure
      */
     protected AbstractPersistentStructure(final Version version) {
         if (version == null) {
@@ -46,7 +48,7 @@ public abstract class AbstractPersistentStructure<T>
         this.transactionManager = new TransactionManager();
         this.preTransactionState = null;
     }
-    
+
     /**
      * {@inheritDoc}
      */
@@ -54,7 +56,7 @@ public abstract class AbstractPersistentStructure<T>
     public Version getVersion() {
         return currentVersion;
     }
-    
+
     /**
      * Creates a new version identifier for use when modifying the structure.
      * If in transaction, creates a transactional version.
@@ -70,15 +72,17 @@ public abstract class AbstractPersistentStructure<T>
             return new TransactionalVersion();
         }
     }
-    
+
     /**
      * Sets the current version.
      * Used internally after operations.
+     *
+     * @param <T> version of structure
      */
-    protected void setVersion(Version version) {
+    protected void setVersion(final Version version) {
         this.currentVersion = version;
     }
-    
+
     /**
      * {@inheritDoc}
      */
@@ -86,7 +90,7 @@ public abstract class AbstractPersistentStructure<T>
     public boolean isEmpty() {
         return size() == 0;
     }
-    
+
     /**
      * {@inheritDoc}
      */
@@ -98,7 +102,7 @@ public abstract class AbstractPersistentStructure<T>
         }
         transactionManager.beginTransaction();
     }
-    
+
     /**
      * {@inheritDoc}
      */
@@ -106,7 +110,7 @@ public abstract class AbstractPersistentStructure<T>
     public void commitTransaction() {
         if (transactionManager.isInTransaction()) {
             transactionManager.commitTransaction();
-            
+
             // If this was the outermost transaction, convert to final version
             if (!transactionManager.isInTransaction()) {
                 convertToFinalVersion();
@@ -114,7 +118,7 @@ public abstract class AbstractPersistentStructure<T>
             }
         }
     }
-    
+
     /**
      * {@inheritDoc}
      */
@@ -122,14 +126,16 @@ public abstract class AbstractPersistentStructure<T>
     public void rollbackTransaction() {
         if (transactionManager.isInTransaction()) {
             transactionManager.rollbackTransaction();
-            
-            // If this was the outermost transaction, restore pre-transaction state
-            if (!transactionManager.isInTransaction() && preTransactionState != null) {
+
+            // If this was the outermost transaction,
+            // restore pre-transaction state
+            if (!transactionManager.isInTransaction()
+                && preTransactionState != null) {
                 restoreFromPreTransactionState();
             }
         }
     }
-    
+
     /**
      * {@inheritDoc}
      */
@@ -137,7 +143,7 @@ public abstract class AbstractPersistentStructure<T>
     public boolean isInTransaction() {
         return transactionManager.isInTransaction();
     }
-    
+
     /**
      * {@inheritDoc}
      */
@@ -145,26 +151,26 @@ public abstract class AbstractPersistentStructure<T>
     public PersistentStructure<T> getPreTransactionState() {
         return preTransactionState;
     }
-    
+
     /**
      * Saves the current state before transaction begins.
      * Must be implemented by subclasses.
      */
     protected abstract void savePreTransactionState();
-    
+
     /**
      * Restores state from pre-transaction snapshot.
      * Must be implemented by subclasses.
      */
     protected abstract void restoreFromPreTransactionState();
-    
+
     /**
      * Clears the pre-transaction state.
      */
     protected void clearPreTransactionState() {
         this.preTransactionState = null;
     }
-    
+
     /**
      * Converts transactional versions to final versions.
      * Must be implemented by subclasses.
