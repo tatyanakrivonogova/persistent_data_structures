@@ -19,12 +19,12 @@ public abstract class AbstractPersistentStructure<T>
     /**
      * Transaction manager for this structure.
      */
-    private final TransactionManager transactionManager;
+    protected final TransactionManager transactionManager;
 
     /**
      * State before transaction started (for rollback).
      */
-    private PersistentStructure<T> preTransactionState;
+    protected PersistentStructure<T> preTransactionState;
 
     /**
      * Constructs a new abstract persistent structure with an initial version.
