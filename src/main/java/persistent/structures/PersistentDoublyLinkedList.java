@@ -164,7 +164,8 @@ public final class PersistentDoublyLinkedList<E extends Comparable<E>>
      */
     @Override
     protected void restoreFromPreTransactionState() {
-        if (this.getPreTransactionState() instanceof PersistentDoublyLinkedList) {
+        if (this.getPreTransactionState()
+            instanceof PersistentDoublyLinkedList) {
             @SuppressWarnings("unchecked")
             PersistentDoublyLinkedList<E> savedState =
                 (PersistentDoublyLinkedList<E>) this.getPreTransactionState();
