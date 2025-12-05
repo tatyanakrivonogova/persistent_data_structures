@@ -20,17 +20,17 @@ public class TransactionManager {
      */
     private static class TransactionState {
         /**
-         * Unique transaction identifier
+         * Unique transaction identifier.
          */
         private final UUID transactionId;
 
         /**
-         * Counter for generating sequential numbers within transaction
+         * Counter for generating sequential numbers within transaction.
          */
         private int sequenceCounter;
 
         /**
-         * Transaction context for storing arbitrary data
+         * Transaction context for storing arbitrary data.
          */
         private final Map<String, Object> context;
 
@@ -56,12 +56,12 @@ public class TransactionManager {
     }
 
     /**
-     * Stack of active transactions
+     * Stack of active transactions.
      */
     private final Deque<TransactionState> transactionStack;
 
     /**
-     * Thread-local storage for current transaction state
+     * Thread-local storage for current transaction state.
      */
     private final ThreadLocal<TransactionState> currentTransaction;
 
