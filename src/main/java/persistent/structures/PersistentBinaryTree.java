@@ -193,12 +193,12 @@ public class PersistentBinaryTree<T extends Comparable<T>>
      * The root node of the binary tree.
      */
     private BinaryTreeNode<T> root;
-    
+
     /**
      * The number of elements in the binary tree.
      */
     private int size;
-    
+
     /**
      * Constructs an empty persistent binary tree.
      */
@@ -207,24 +207,39 @@ public class PersistentBinaryTree<T extends Comparable<T>>
         this.root = null;
         this.size = 0;
     }
-    
+
     /**
      * Private constructor for creating new versions of the tree.
+     * Creates a new persistent binary tree instance with specified
+     * root node, size, and version.
+     * Used internally for creating modified versions without
+     * altering the original tree.
+     *
+     * @param rootValue the root node of the tree,
+     * can be null for empty tree
+     * @param sizeValue the number of elements in the tree
+     * @param version   the version identifier for this tree instance
      */
     private PersistentBinaryTree(final BinaryTreeNode<T> rootValue,
-                                 final int sizeValue, final Version version) {
+        final int sizeValue, final Version version) {
         super(version);
         this.root = rootValue;
         this.size = sizeValue;
     }
-    
+
     /**
      * Creates a deep copy of the current tree.
+     * Creates a new persistent binary tree instance that shares the structure
+     * but has independent version tracking. Useful for creating new versions
+     * while preserving immutability.
+     *
+     * @return a new PersistentBinaryTree instance with the same
+     * structure and size but separate version identity
      */
     private PersistentBinaryTree<T> deepCopy() {
         return new PersistentBinaryTree<>(this.root, this.size, this.getVersion());
     }
-    
+
     /**
      * {@inheritDoc}
      */
@@ -232,7 +247,7 @@ public class PersistentBinaryTree<T extends Comparable<T>>
     protected void savePreTransactionState() {
         this.preTransactionState = this.deepCopy();
     }
-    
+
     /**
      * {@inheritDoc}
      */
@@ -245,7 +260,7 @@ public class PersistentBinaryTree<T extends Comparable<T>>
             this.setVersion(savedState.getVersion());
         }
     }
-    
+
     /**
      * {@inheritDoc}
      */
@@ -260,7 +275,7 @@ public class PersistentBinaryTree<T extends Comparable<T>>
             }
         }
     }
-    
+
     /**
      * Inserts the specified element into this tree.
      * Transaction-aware: in transaction, modifications are isolated.
@@ -271,14 +286,14 @@ public class PersistentBinaryTree<T extends Comparable<T>>
     public PersistentBinaryTree<T> insert(final T value) {
         BinaryTreeNode<T> newRoot = insert(root, value);
         boolean valueExists = newRoot == root && root != null && contains(value);
-        
+
         Version newVersion = createNewVersion();
         PersistentBinaryTree<T> result = new PersistentBinaryTree<>(
             newRoot,
             valueExists ? size : size + 1,
             newVersion
         );
-        
+
         // If in transaction, update current instance
         if (isInTransaction()) {
             this.root = result.root;
@@ -286,10 +301,10 @@ public class PersistentBinaryTree<T extends Comparable<T>>
             this.setVersion(newVersion);
             return this;
         }
-        
+    
         return result;
     }
-    
+
     /**
      * Removes the specified element from this tree if present.
      * Transaction-aware: in transaction, modifications are isolated.
@@ -302,14 +317,14 @@ public class PersistentBinaryTree<T extends Comparable<T>>
         if (newRoot == root) {
             return this; // Value not found
         }
-        
+
         Version newVersion = createNewVersion();
         PersistentBinaryTree<T> result = new PersistentBinaryTree<>(
             newRoot,
             size - 1,
             newVersion
         );
-        
+
         // If in transaction, update current instance
         if (isInTransaction()) {
             this.root = result.root;
@@ -317,7 +332,7 @@ public class PersistentBinaryTree<T extends Comparable<T>>
             this.setVersion(newVersion);
             return this;
         }
-        
+
         return result;
     }
 
@@ -639,6 +654,11 @@ public class PersistentBinaryTree<T extends Comparable<T>>
     /**
      * Returns a snapshot of the current tree state.
      * Useful for getting a consistent view during transactions.
+     * Creates an independent copy of the tree that won't be affected
+     * by subsequent modifications to the original.
+     *
+     * @return a new PersistentBinaryTree instance representing
+     * the current state as an immutable snapshot
      */
     public PersistentBinaryTree<T> snapshot() {
         return this.deepCopy();

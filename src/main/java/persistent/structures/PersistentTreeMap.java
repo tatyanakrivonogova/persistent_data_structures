@@ -138,12 +138,12 @@ public class PersistentTreeMap<K extends Comparable<K>, V>
      * The root node of the tree.
      */
     private TreeNode<K, V> root;
-    
+
     /**
      * The number of elements in the binary tree.
      */
     private int size;
-    
+
     /**
      * Constructs an empty persistent tree map.
      */
@@ -152,7 +152,7 @@ public class PersistentTreeMap<K extends Comparable<K>, V>
         this.root = null;
         this.size = 0;
     }
-    
+
     /**
      * Private constructor for creating new versions of the map.
      */
@@ -162,14 +162,14 @@ public class PersistentTreeMap<K extends Comparable<K>, V>
         this.root = rootValue;
         this.size = sizeValue;
     }
-    
+
     /**
      * Creates a deep copy of the current map.
      */
     private PersistentTreeMap<K, V> deepCopy() {
         return new PersistentTreeMap<>(this.root, this.size, this.getVersion());
     }
-    
+
     /**
      * {@inheritDoc}
      */
@@ -177,20 +177,21 @@ public class PersistentTreeMap<K extends Comparable<K>, V>
     protected void savePreTransactionState() {
         this.preTransactionState = this.deepCopy();
     }
-    
+
     /**
      * {@inheritDoc}
      */
     @Override
     protected void restoreFromPreTransactionState() {
         if (preTransactionState instanceof PersistentTreeMap) {
-            PersistentTreeMap<K, V> savedState = (PersistentTreeMap<K, V>) preTransactionState;
+            PersistentTreeMap<K, V> savedState =
+                (PersistentTreeMap<K, V>) preTransactionState;
             this.root = savedState.root;
             this.size = savedState.size;
             this.setVersion(savedState.getVersion());
         }
     }
-    
+
     /**
      * {@inheritDoc}
      */
@@ -201,11 +202,12 @@ public class PersistentTreeMap<K extends Comparable<K>, V>
         if (current instanceof TransactionalVersion) {
             TransactionalVersion tv = (TransactionalVersion) current;
             if (tv.isTransactional()) {
-                setVersion(new TransactionalVersion(tv.getId(), null, false, 0));
+                setVersion(new TransactionalVersion(tv.getId(), null,
+                    false, 0));
             }
         }
     }
-    
+
     /**
      * Associates the specified value with the specified key in this map.
      * Transaction-aware: in transaction, modifications are isolated.
@@ -217,14 +219,14 @@ public class PersistentTreeMap<K extends Comparable<K>, V>
     public PersistentTreeMap<K, V> put(final K key, final V value) {
         TreeNode<K, V> newRoot = put(root, key, value);
         boolean keyExists = get(root, key) != null;
-        
+
         Version newVersion = createNewVersion();
         PersistentTreeMap<K, V> result = new PersistentTreeMap<>(
             newRoot,
             keyExists ? size : size + 1,
             newVersion
         );
-        
+
         // If in transaction, update current instance
         if (isInTransaction()) {
             this.root = result.root;
@@ -232,10 +234,10 @@ public class PersistentTreeMap<K extends Comparable<K>, V>
             this.setVersion(newVersion);
             return this;
         }
-        
+
         return result;
     }
-    
+
     /**
      * Removes the mapping for the specified key from this map if present.
      * Transaction-aware: in transaction, modifications are isolated.
@@ -247,7 +249,7 @@ public class PersistentTreeMap<K extends Comparable<K>, V>
         if (!containsKey(key)) {
             return this; // Key not found - return same instance
         }
-        
+
         TreeNode<K, V> newRoot = remove(root, key);
         Version newVersion = createNewVersion();
         PersistentTreeMap<K, V> result = new PersistentTreeMap<>(
@@ -255,7 +257,7 @@ public class PersistentTreeMap<K extends Comparable<K>, V>
             size - 1,
             newVersion
         );
-        
+
         // If in transaction, update current instance
         if (isInTransaction()) {
             this.root = result.root;
@@ -263,7 +265,7 @@ public class PersistentTreeMap<K extends Comparable<K>, V>
             this.setVersion(newVersion);
             return this;
         }
-        
+
         return result;
     }
 

@@ -7,41 +7,66 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Менеджер транзакций для персистентных структур.
- * Управляет стеком транзакций и их состояниями.
+ * Transaction manager for persistent data structures.
+ * Manages transaction stack and their states.
+ * Provides transaction isolation and context management.
  *
  * @version 3.0
  */
 public class TransactionManager {
     /**
-     * Состояние транзакции.
+     * Internal class representing transaction state.
+     * Contains transaction identifier, sequence counter and context.
      */
     private static class TransactionState {
-        final UUID transactionId;
+        /** Unique transaction identifier */
+        private final UUID transactionId;
+
+        /** Counter for generating sequential numbers within transaction */
         int sequenceCounter;
+
+        /** Transaction context for storing arbitrary data */
         final Map<String, Object> context;
-        
+
+        /**
+         * Creates new transaction state with specified identifier.
+         *
+         * @param transactionId unique transaction identifier
+         */
         TransactionState(UUID transactionId) {
             this.transactionId = transactionId;
             this.sequenceCounter = 0;
             this.context = new HashMap<>();
         }
-        
+
+        /**
+         * Returns the next sequential number in current transaction.
+         *
+         * @return next sequential number (incremented by 1)
+         */
         int getNextSequence() {
             return ++sequenceCounter;
         }
     }
-    
+
+    /** Stack of active transactions */
     private final Deque<TransactionState> transactionStack;
+
+    /** Thread-local storage for current transaction state */
     private final ThreadLocal<TransactionState> currentTransaction;
-    
+
+    /**
+     * Creates new transaction manager instance.
+     */
     public TransactionManager() {
         this.transactionStack = new ArrayDeque<>();
         this.currentTransaction = new ThreadLocal<>();
     }
-    
+
     /**
-     * Начинает новую транзакцию.
+     * Starts a new transaction.
+     *
+     * @return unique identifier of created transaction
      */
     public UUID beginTransaction() {
         UUID transactionId = UUID.randomUUID();
@@ -50,9 +75,10 @@ public class TransactionManager {
         currentTransaction.set(state);
         return transactionId;
     }
-    
+
     /**
-     * Подтверждает текущую транзакцию.
+     * Commits the current transaction.
+     * Removes current transaction from stack and updates thread-local state.
      */
     public void commitTransaction() {
         if (!transactionStack.isEmpty()) {
@@ -64,9 +90,10 @@ public class TransactionManager {
             }
         }
     }
-    
+
     /**
-     * Откатывает текущую транзакцию.
+     * Rolls back the current transaction.
+     * Removes current transaction from stack and updates thread-local state.
      */
     public void rollbackTransaction() {
         if (!transactionStack.isEmpty()) {
@@ -78,32 +105,41 @@ public class TransactionManager {
             }
         }
     }
-    
+
     /**
-     * Проверяет, активна ли транзакция.
+     * Checks if transaction is currently active.
+     *
+     * @return true if there is an active transaction, false otherwise
      */
     public boolean isInTransaction() {
         return !transactionStack.isEmpty();
     }
-    
+
     /**
-     * Возвращает идентификатор текущей транзакции.
+     * Returns identifier of current transaction.
+     *
+     * @return current transaction identifier, or null if no active transaction
      */
     public UUID getCurrentTransactionId() {
         TransactionState state = currentTransaction.get();
         return state != null ? state.transactionId : null;
     }
-    
+
     /**
-     * Получает следующий порядковый номер в текущей транзакции.
+     * Gets next sequential number in current transaction.
+     *
+     * @return next sequential number, or 0 if no active transaction
      */
     public int getNextTransactionSequence() {
         TransactionState state = currentTransaction.get();
         return state != null ? state.getNextSequence() : 0;
     }
-    
+
     /**
-     * Сохраняет значение в контексте транзакции.
+     * Stores value in transaction context.
+     *
+     * @param key the key with which the value is to be associated
+     * @param value the value to be stored
      */
     public void putInContext(String key, Object value) {
         TransactionState state = currentTransaction.get();
@@ -111,17 +147,21 @@ public class TransactionManager {
             state.context.put(key, value);
         }
     }
-    
+
     /**
-     * Получает значение из контекста транзакции.
+     * Retrieves value from transaction context.
+     *
+     * @param key the key whose associated value is to be returned
+     * @return the value associated with specified key, or null if no active transaction or key not found
      */
     public Object getFromContext(String key) {
         TransactionState state = currentTransaction.get();
         return state != null ? state.context.get(key) : null;
     }
-    
+
     /**
-     * Очищает контекст транзакции.
+     * Clears transaction context.
+     * Removes all key-value pairs from current transaction context.
      */
     public void clearContext() {
         TransactionState state = currentTransaction.get();
