@@ -235,22 +235,7 @@ public class PersistentTreeMap<K extends Comparable<K>, V>
         TreeNode<K, V> newRoot = put(root, key, value);
         boolean keyExists = get(root, key) != null;
 
-        Version newVersion = createNewVersion();
-        PersistentTreeMap<K, V> result = new PersistentTreeMap<>(
-            newRoot,
-            keyExists ? size : size + 1,
-            newVersion
-        );
-
-        // If in transaction, update current instance
-        if (isInTransaction()) {
-            this.root = result.root;
-            this.size = result.size;
-            this.setVersion(newVersion);
-            return this;
-        }
-
-        return result;
+        return createModifiedMap(newRoot, keyExists ? size : size + 1);
     }
 
     /**
@@ -266,22 +251,7 @@ public class PersistentTreeMap<K extends Comparable<K>, V>
         }
 
         TreeNode<K, V> newRoot = remove(root, key);
-        Version newVersion = createNewVersion();
-        PersistentTreeMap<K, V> result = new PersistentTreeMap<>(
-            newRoot,
-            size - 1,
-            newVersion
-        );
-
-        // If in transaction, update current instance
-        if (isInTransaction()) {
-            this.root = result.root;
-            this.size = result.size;
-            this.setVersion(newVersion);
-            return this;
-        }
-
-        return result;
+        return createModifiedMap(newRoot, size - 1);
     }
 
     /**
@@ -598,6 +568,51 @@ public class PersistentTreeMap<K extends Comparable<K>, V>
                 node.getKey(), node.getValue()));
             inOrderTraversal(node.getRight(), result);
         }
+    }
+
+    /**
+     * Creates a modified version of the map with
+     * new root and size.
+     * Handles transaction-aware updates.
+     *
+     * @param newRoot new root node
+     * @param newSize new size
+     * @return modified map (same instance if in transaction,
+     * new instance otherwise)
+     */
+    private PersistentTreeMap<K, V> createModifiedMap(
+            final TreeNode<K, V> newRoot,
+            final int newSize
+    ) {
+        Version newVersion = createNewVersion();
+        PersistentTreeMap<K, V> result = new PersistentTreeMap<>(
+            newRoot,
+            newSize,
+            newVersion
+        );
+
+        // If in transaction, update current instance
+        if (isInTransaction()) {
+            updateCurrentInstance(result, newVersion);
+            return this;
+        }
+
+        return result;
+    }
+
+    /**
+     * Updates current instance with new state during transaction.
+     *
+     * @param newState new map state
+     * @param version new version
+     */
+    private void updateCurrentInstance(
+            final PersistentTreeMap<K, V> newState,
+            final Version version
+    ) {
+        this.root = newState.root;
+        this.size = newState.size;
+        this.setVersion(version);
     }
 
     /**

@@ -291,22 +291,10 @@ public class PersistentBinaryTree<T extends Comparable<T>>
         boolean valueExists = newRoot == root && root != null
             && contains(value);
 
-        Version newVersion = createNewVersion();
-        PersistentBinaryTree<T> result = new PersistentBinaryTree<>(
+        return createModifiedTree(
             newRoot,
-            valueExists ? size : size + 1,
-            newVersion
+            valueExists ? size : size + 1
         );
-
-        // If in transaction, update current instance
-        if (isInTransaction()) {
-            this.root = result.root;
-            this.size = result.size;
-            this.setVersion(newVersion);
-            return this;
-        }
-
-        return result;
     }
 
     /**
@@ -322,22 +310,7 @@ public class PersistentBinaryTree<T extends Comparable<T>>
             return this; // Value not found
         }
 
-        Version newVersion = createNewVersion();
-        PersistentBinaryTree<T> result = new PersistentBinaryTree<>(
-            newRoot,
-            size - 1,
-            newVersion
-        );
-
-        // If in transaction, update current instance
-        if (isInTransaction()) {
-            this.root = result.root;
-            this.size = result.size;
-            this.setVersion(newVersion);
-            return this;
-        }
-
-        return result;
+        return createModifiedTree(newRoot, size - 1);
     }
 
     /**
@@ -653,6 +626,51 @@ public class PersistentBinaryTree<T extends Comparable<T>>
         List<T> result = new ArrayList<>();
         inOrderTraversal(root, result::add);
         return result;
+    }
+
+    /**
+     * Creates a modified version of the tree with
+     * new root and size.
+     * Handles transaction-aware updates.
+     *
+     * @param newRoot new root node
+     * @param newSize new size
+     * @return modified tree (same instance if in transaction,
+     * new instance otherwise)
+     */
+    private PersistentBinaryTree<T> createModifiedTree(
+            final BinaryTreeNode<T> newRoot,
+            final int newSize
+    ) {
+        Version newVersion = createNewVersion();
+        PersistentBinaryTree<T> result = new PersistentBinaryTree<>(
+            newRoot,
+            newSize,
+            newVersion
+        );
+
+        // If in transaction, update current instance
+        if (isInTransaction()) {
+            updateCurrentInstance(result, newVersion);
+            return this;
+        }
+
+        return result;
+    }
+
+    /**
+     * Updates current instance with new state during transaction.
+     *
+     * @param newState new tree state
+     * @param version new version
+     */
+    private void updateCurrentInstance(
+            final PersistentBinaryTree<T> newState,
+            final Version version
+    ) {
+        this.root = newState.root;
+        this.size = newState.size;
+        this.setVersion(version);
     }
 
     /**
