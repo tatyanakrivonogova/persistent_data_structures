@@ -14,7 +14,7 @@ import java.util.NoSuchElementException;
  * @param <E> element type
  * @version 3.0
  */
-public final class PersistentDoublyLinkedList<E extends Comparable<E>>
+public final class PersistentDoublyLinkedList<E>
         extends AbstractPersistentStructure<E> {
 
     /**
