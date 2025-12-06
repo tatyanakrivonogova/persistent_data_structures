@@ -253,23 +253,9 @@ public final class PersistentDoublyLinkedList<E>
             throw new IndexOutOfBoundsException("index: " + index);
         }
 
-        final Version version = createNewVersion();
-
         if (size == 0) {
             final Node<E> newNode = new Node<>(value, null, null);
-            PersistentDoublyLinkedList<E> result =
-                new PersistentDoublyLinkedList<>(newNode, newNode, 1, version);
-
-            // If in transaction, update current instance
-            if (isInTransaction()) {
-                this.head = result.head;
-                this.tail = result.tail;
-                this.size = result.size;
-                this.setVersion(version);
-                return this;
-            }
-
-            return result;
+            return createModifiedList(newNode, newNode, 1);
         }
 
         @SuppressWarnings("unchecked")
@@ -309,20 +295,7 @@ public final class PersistentDoublyLinkedList<E>
             prevNewNode = lastNode;
         }
 
-        PersistentDoublyLinkedList<E> result = new PersistentDoublyLinkedList<>(
-                newHeadRef[0], prevNewNode, size + 1, version
-        );
-
-        // If in transaction, update current instance
-        if (isInTransaction()) {
-            this.head = result.head;
-            this.tail = result.tail;
-            this.size = result.size;
-            this.setVersion(version);
-            return this;
-        }
-
-        return result;
+        return createModifiedList(newHeadRef[0], prevNewNode, size + 1);
     }
 
     /**
@@ -358,22 +331,8 @@ public final class PersistentDoublyLinkedList<E>
     public PersistentDoublyLinkedList<E> remove(final int index) {
         checkIndex(index);
 
-        final Version version = createNewVersion();
-
         if (size == 1) {
-            PersistentDoublyLinkedList<E> result =
-                new PersistentDoublyLinkedList<>(null, null, 0, version);
-
-            // If in transaction, update current instance
-            if (isInTransaction()) {
-                this.head = result.head;
-                this.tail = result.tail;
-                this.size = result.size;
-                this.setVersion(version);
-                return this;
-            }
-
-            return result;
+            return createModifiedList(null, null, 0);
         }
 
         @SuppressWarnings("unchecked")
@@ -396,20 +355,7 @@ public final class PersistentDoublyLinkedList<E>
             pos++;
         }
 
-        PersistentDoublyLinkedList<E> result = new PersistentDoublyLinkedList<>(
-                newHeadRef[0], prevNewNode, size - 1, version
-        );
-
-        // If in transaction, update current instance
-        if (isInTransaction()) {
-            this.head = result.head;
-            this.tail = result.tail;
-            this.size = result.size;
-            this.setVersion(version);
-            return this;
-        }
-
-        return result;
+        return createModifiedList(newHeadRef[0], prevNewNode, size - 1);
     }
 
     /**
@@ -422,6 +368,53 @@ public final class PersistentDoublyLinkedList<E>
      */
     public PersistentDoublyLinkedList<E> snapshot() {
         return this.deepCopy();
+    }
+
+    /**
+     * Creates a modified version of the list with new head,
+     * tail and size.
+     * Handles transaction-aware updates.
+     *
+     * @param newHead new head node
+     * @param newTail new tail node
+     * @param newSize new size
+     * @return modified list (same instance if in transaction,
+     * new instance otherwise)
+     */
+    private PersistentDoublyLinkedList<E> createModifiedList(
+            final Node<E> newHead,
+            final Node<E> newTail,
+            final int newSize
+    ) {
+        final Version version = createNewVersion();
+        PersistentDoublyLinkedList<E> result =
+            new PersistentDoublyLinkedList<>(
+                newHead, newTail, newSize, version
+        );
+
+        // If in transaction, update current instance
+        if (isInTransaction()) {
+            updateCurrentInstance(result, version);
+            return this;
+        }
+
+        return result;
+    }
+
+    /**
+     * Updates current instance with new state during transaction.
+     *
+     * @param newState new list state
+     * @param version new version
+     */
+    private void updateCurrentInstance(
+            final PersistentDoublyLinkedList<E> newState,
+            final Version version
+    ) {
+        this.head = newState.head;
+        this.tail = newState.tail;
+        this.size = newState.size;
+        this.setVersion(version);
     }
 
     /**
@@ -456,7 +449,7 @@ public final class PersistentDoublyLinkedList<E>
      * @param index node index
      *
      * @return node at index
-     * */
+     */
     private Node<E> nodeAt(final int index) {
         Node<E> current;
 
@@ -479,7 +472,7 @@ public final class PersistentDoublyLinkedList<E>
      * Validates index.
      *
      * @param index index to validate
-     * */
+     */
     private void checkIndex(final int index) {
         if (index < 0 || index >= size) {
             throw new IndexOutOfBoundsException(
