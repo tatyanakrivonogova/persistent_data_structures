@@ -64,13 +64,19 @@ public class PersistentTreeMap<K extends Comparable<K>, V>
     
     // ========== PersistentStructure interface implementations ==========
     
-    @Override
+     @Override
     public PersistentStructure<Map.Entry<K, V>> createWithAdded(Map.Entry<K, V> entry) {
+        if (entry == null || entry.getKey() == null) {
+            return this; // Don't add null entries or null keys
+        }
         return put(entry.getKey(), entry.getValue());
     }
     
     @Override
     public PersistentStructure<Map.Entry<K, V>> createWithRemoved(Map.Entry<K, V> entry) {
+        if (entry == null || entry.getKey() == null) {
+            return this; // Can't remove null
+        }
         return remove(entry.getKey());
     }
     
@@ -81,10 +87,13 @@ public class PersistentTreeMap<K extends Comparable<K>, V>
     
     @Override
     public boolean containsElement(Map.Entry<K, V> entry) {
+        if (entry == null || entry.getKey() == null) {
+            return false;
+        }
         V value = get(entry.getKey());
         return value != null && value.equals(entry.getValue());
     }
-    
+
     // ========== Map-specific operations ==========
     
     /**
@@ -102,10 +111,10 @@ public class PersistentTreeMap<K extends Comparable<K>, V>
      * Removes the mapping for the specified key.
      */
     public PersistentTreeMap<K, V> remove(K key) {
-        TreeNode<K, V> newRoot = delete(root, key);
-        if (newRoot == root) {
-            return this; // Key not found
+        if (!containsKey(key)) {
+            return this;
         }
+        TreeNode<K, V> newRoot = delete(root, key);
         return new PersistentTreeMap<>(newRoot == null ? null : newRoot);
     }
     
@@ -168,6 +177,9 @@ public class PersistentTreeMap<K extends Comparable<K>, V>
     
     @Override
     public boolean contains(Object o) {
+        if (o == null) {
+            return false;
+        }
         try {
             @SuppressWarnings("unchecked")
             Map.Entry<K, V> entry = (Map.Entry<K, V>) o;
@@ -340,18 +352,29 @@ public class PersistentTreeMap<K extends Comparable<K>, V>
         int cmp = key.compareTo(node.key);
         if (cmp < 0) {
             TreeNode<K, V> newLeft = put(node.left, key, value);
-            if (newLeft == node.left && get(key) != null && Objects.equals(get(key), value)) {
-                return node; // No change
+            if (newLeft == node.left) {
+                // Check if we're updating existing key with same value
+                TreeNode<K, V> existing = get(node, key);
+                if (existing != null && Objects.equals(existing.value, value)) {
+                    return node; // No change
+                }
             }
             return balance(new TreeNode<>(node.key, node.value, newLeft, node.right));
         } else if (cmp > 0) {
             TreeNode<K, V> newRight = put(node.right, key, value);
-            if (newRight == node.right && get(key) != null && Objects.equals(get(key), value)) {
-                return node; // No change
+            if (newRight == node.right) {
+                // Check if we're updating existing key with same value
+                TreeNode<K, V> existing = get(node, key);
+                if (existing != null && Objects.equals(existing.value, value)) {
+                    return node; // No change
+                }
             }
             return balance(new TreeNode<>(node.key, node.value, node.left, newRight));
         } else {
             // Update existing key
+            if (Objects.equals(node.value, value)) {
+                return node; // Same value, no change
+            }
             return new TreeNode<>(key, value, node.left, node.right);
         }
     }
