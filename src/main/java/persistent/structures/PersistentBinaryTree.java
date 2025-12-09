@@ -1,582 +1,487 @@
 package persistent.structures;
 
-import persistent.core.AbstractPersistentStructure;
+import persistent.core.PersistentStructure;
 import persistent.core.Version;
+import persistent.core.SimpleVersion;
 
-import java.util.Iterator;
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.ArrayList;
-import java.util.function.Consumer;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * A persistent binary search tree implementation.
- * Provides efficient storage and retrieval of comparable elements
- * with AVL balancing.
+ * Persistent binary search tree that fully implements Collection interface.
+ * Uses wrapper pattern for transactional updates.
  *
- * @param <T> the type of elements in this tree, must be Comparable
- * @version 1.0
+ * @param <T> the type of elements, must be Comparable
  */
 public class PersistentBinaryTree<T extends Comparable<T>>
-        extends AbstractPersistentStructure<T> {
+        implements PersistentStructure<T> {
+    
     /**
-     * A node for binary tree implementations of persistent structures.
-     * This class represents a node in a balanced binary search tree with
-     * height information for maintaining tree balance. The node is immutable
-     * to ensure thread safety and persistence.
-     *
-     * @param <T> the type of values stored in the node,
-     * must be Comparable for ordering
-     * @version 1.0
+     * Immutable tree node.
      */
-    private static class BinaryTreeNode<T extends Comparable<T>> {
-        /**
-         * The value stored in this node.
-         */
-        private final T value;
-
-        /**
-         * The left child of this node.
-         */
-        private final BinaryTreeNode<T> left;
-
-        /**
-         * The right child of this node.
-         */
-        private final BinaryTreeNode<T> right;
-
-        /**
-         * The height of the subtree rooted at this node.
-         */
-        private final int height;
-
-        /**
-         * Constructs a new binary tree node with the specified
-         * value and children.
-         * The height is automatically calculated based on the
-         * children's heights.
-         *
-         * @param valueValue the value to store in this node
-         * @param leftValue the left child node, may be null
-         * @param rightValue the right child node, may be null
-         */
-        BinaryTreeNode(final T valueValue,
-            final BinaryTreeNode<T> leftValue,
-            final BinaryTreeNode<T> rightValue) {
-            this.value = valueValue;
-            this.left = leftValue;
-            this.right = rightValue;
-            this.height = 1 + Math.max(height(leftValue), height(rightValue));
+    private static class Node<T extends Comparable<T>> {
+        final T value;
+        final Node<T> left;
+        final Node<T> right;
+        final int height;
+        final int size;
+        
+        Node(T value, Node<T> left, Node<T> right) {
+            this.value = value;
+            this.left = left;
+            this.right = right;
+            this.height = 1 + Math.max(height(left), height(right));
+            this.size = 1 + size(left) + size(right);
         }
-
-        /**
-         * Calculates the height of the given tree node.
-         *
-         * @param <T> the type of elements stored in the binary node
-         * @param node the node to calculate height for, may be null
-         * @return the height of the node, or 0 if the node is null
-         */
-        private static <T extends Comparable<T>> int
-            height(final BinaryTreeNode<T> node) {
-            return node == null ? 0 : node.getHeight();
+        
+        static <T extends Comparable<T>> int height(Node<T> node) {
+            return node == null ? 0 : node.height;
         }
-
-        /**
-         * Returns the value stored in this node.
-         *
-         * @return the value of this node
-         */
-        public T getValue() {
-            return value;
+        
+        static <T extends Comparable<T>> int size(Node<T> node) {
+            return node == null ? 0 : node.size;
         }
-
-        /**
-         * Returns the left child of this node.
-         *
-         * @return the left child node, or null if no left child exists
-         */
-        public BinaryTreeNode<T> getLeft() {
-            return left;
-        }
-
-        /**
-         * Returns the right child of this node.
-         *
-         * @return the right child node, or null if no right child exists
-         */
-        public BinaryTreeNode<T> getRight() {
-            return right;
-        }
-
-        /**
-         * Returns the height of the subtree rooted at this node.
-         * The height of a node is the number of edges on the longest path
-         * from the node to a leaf. A leaf node has height 1.
-         *
-         * @return the height of this node
-         */
-        public int getHeight() {
-            return height;
-        }
-
-        /**
-         * Returns the balance factor of this node.
-         * The balance factor is defined as the difference between the height
-         * of the left subtree and the height of the right subtree.
-         *
-         * @return the balance factor (left height - right height)
-         */
-        public int getBalanceFactor() {
+        
+        int balanceFactor() {
             return height(left) - height(right);
         }
-
-        /**
-         * Returns a string representation of this node".
-         *
-         * @return string representation of this node
-         */
-        @Override
-        public String toString() {
-            return value + "[" + height + "]";
-        }
-
-        /**
-         * Compares this node with another object for equality.
-         * Two BinaryTreeNode objects are equal if they have the same value,
-         * same left subtree, and same right subtree.
-         *
-         * @param obj the object to compare with
-         * @return true if the objects are equal, false otherwise
-         */
-        @Override
-        @SuppressWarnings("unchecked")
-        public boolean equals(final Object obj) {
-            if (this == obj) {
-                return true;
-            }
-            if (obj == null || getClass() != obj.getClass()) {
-                return false;
-            }
-
-            BinaryTreeNode<T> that = (BinaryTreeNode<T>) obj;
-
-            if (height != that.height) {
-                return false;
-            }
-            if (!value.equals(that.value)) {
-                return false;
-            }
-            if (left != null ? !left.equals(that.left) : that.left != null) {
-                return false;
-            }
-            return right != null ? right.equals(that.right)
-                : that.right == null;
-        }
-
-        /**
-         * Returns a hash code value for this node based on its
-         * value and structure.
-         *
-         * @return hash code value for this node
-         */
-        @Override
-        public int hashCode() {
-            int result = value.hashCode();
-            final int mul = 31;
-            result = mul * result + (left != null ? left.hashCode() : 0);
-            result = mul * result + (right != null ? right.hashCode() : 0);
-            result = mul * result + height;
-            return result;
-        }
     }
-
-    /**
-     * The root node of the binary tree.
-     */
-    private final BinaryTreeNode<T> root;
-
-    /**
-     * The number of elements in the binary tree.
-     */
-    private final int size;
-
-    /**
-     * Constructs an empty persistent binary tree.
-     */
+    
+    private final Node<T> root;
+    
+    // Public constructor for empty tree
     public PersistentBinaryTree() {
-        super();
         this.root = null;
-        this.size = 0;
     }
-
-    /**
-     * Private constructor for creating new versions of the tree.
-     *
-     * @param rootValue the root node of the tree
-     * @param sizeValue the size of the tree
-     * @param version the version identifier for this tree instance
-     */
-    private PersistentBinaryTree(final BinaryTreeNode<T> rootValue,
-        final int sizeValue, final Version version) {
-        super(version);
-        this.root = rootValue;
-        this.size = sizeValue;
+    
+    // Private constructor for internal use
+    private PersistentBinaryTree(Node<T> root) {
+        this.root = root;
     }
-
-    /**
-     * Inserts the specified element into this tree.
-     *
-     * @param value the element to be inserted
-     * @return a new persistent tree containing the specified element
-     */
-    public PersistentBinaryTree<T> insert(final T value) {
-        BinaryTreeNode<T> newRoot = insert(root, value);
-        boolean valueExists = newRoot == root && root != null
-                                && contains(value);
-
-        Version newVersion = createNewVersion();
-        return new PersistentBinaryTree<>(
-            newRoot,
-            valueExists ? size : size + 1,
-            newVersion
-        );
-    }
-
-    /**
-     * Removes the specified element from this tree if present.
-     *
-     * @param value the element to be removed
-     * @return a new persistent tree without the specified element
-     */
-    public PersistentBinaryTree<T> remove(final T value) {
-        BinaryTreeNode<T> newRoot = remove(root, value);
+    
+    // ========== PersistentStructure interface implementations ==========
+    
+    @Override
+    public PersistentStructure<T> createWithAdded(T element) {
+        Node<T> newRoot = insert(root, element);
         if (newRoot == root) {
-            return this; // Value not found
+            return this; // Element already exists
         }
-
-        Version newVersion = createNewVersion();
-        return new PersistentBinaryTree<>(newRoot, size - 1, newVersion);
+        return new PersistentBinaryTree<>(newRoot);
     }
-
-    /**
-     * Returns true if this tree contains the specified element.
-     *
-     * @param value the element whose presence in this tree is to be tested
-     * @return true if this tree contains the specified element
-     */
-    public boolean contains(final T value) {
-        return contains(root, value);
-    }
-
-    /**
-     * Returns the minimum element in this tree.
-     *
-     * @return the minimum element in this tree
-     * @throws NoSuchElementException if this tree is empty
-     */
-    public T min() {
-        if (root == null) {
-            throw new NoSuchElementException("Tree is empty");
-        }
-        return findMin(root).getValue();
-    }
-
-    /**
-     * Returns the maximum element in this tree.
-     *
-     * @return the maximum element in this tree
-     * @throws NoSuchElementException if this tree is empty
-     */
-    public T max() {
-        if (root == null) {
-            throw new NoSuchElementException("Tree is empty");
-        }
-        return findMax(root).getValue();
-    }
-
-    /**
-     * Performs an in-order traversal of the tree.
-     *
-     * @param action the action to be performed for each element
-     */
-    public void inOrderTraversal(final Consumer<T> action) {
-        inOrderTraversal(root, action);
-    }
-
-    /**
-     * Performs a pre-order traversal of the tree.
-     *
-     * @param action the action to be performed for each element
-     */
-    public void preOrderTraversal(final Consumer<T> action) {
-        preOrderTraversal(root, action);
-    }
-
-    /**
-     * Performs a post-order traversal of the tree.
-     *
-     * @param action the action to be performed for each element
-     */
-    public void postOrderTraversal(final Consumer<T> action) {
-        postOrderTraversal(root, action);
-    }
-
-    /**
-     * Returns the height of the tree.
-     * The height of an empty tree is 0.
-     *
-     * @return the height of the tree
-     */
-    public int height() {
-        return root == null ? 0 : root.getHeight();
-    }
-
-    /**
-     * Returns true if the tree is balanced (AVL property is maintained).
-     *
-     * @return true if the tree is balanced
-     */
-    public boolean isBalanced() {
-        return isBalanced(root);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
+    
     @Override
-    public int size() {
-        return size;
+    public PersistentStructure<T> createWithRemoved(T element) {
+        Node<T> newRoot = delete(root, element);
+        if (newRoot == root) {
+            return this; // Element not found
+        }
+        return new PersistentBinaryTree<>(newRoot == null ? null : newRoot);
     }
-
-    /**
-     * {@inheritDoc}
-     * Returns an iterator over elements in in-order traversal order.
-     */
+    
     @Override
-    public Iterator<T> iterator() {
-        return inOrderList().iterator();
+    public PersistentStructure<T> createEmpty() {
+        return new PersistentBinaryTree<>(null);
     }
-
-    private BinaryTreeNode<T> insert(final BinaryTreeNode<T> node,
-        final T value) {
-        if (node == null) {
-            return new BinaryTreeNode<>(value, null, null);
-        }
-
-        int cmp = value.compareTo(node.getValue());
-        if (cmp < 0) {
-            BinaryTreeNode<T> newLeft = insert(node.getLeft(), value);
-            return balance(new BinaryTreeNode<>(
-                node.getValue(),
-                newLeft,
-                node.getRight()
-            ));
-        } else if (cmp > 0) {
-            BinaryTreeNode<T> newRight = insert(node.getRight(), value);
-            return balance(new BinaryTreeNode<>(
-                node.getValue(),
-                node.getLeft(),
-                newRight
-            ));
-        } else {
-            // Value already exists, return unchanged node
-            return node;
-        }
+    
+    @Override
+    public boolean containsElement(T element) {
+        if (element == null) return false;
+        return contains(root, element);
     }
-
-    private BinaryTreeNode<T> remove(final BinaryTreeNode<T> node,
-        final T value) {
-        if (node == null) {
-            return null;
-        }
-
-        int cmp = value.compareTo(node.getValue());
-        if (cmp < 0) {
-            BinaryTreeNode<T> newLeft = remove(node.getLeft(), value);
-            return balance(new BinaryTreeNode<>(
-                node.getValue(),
-                newLeft,
-                node.getRight()
-            ));
-        } else if (cmp > 0) {
-            BinaryTreeNode<T> newRight = remove(node.getRight(), value);
-            return balance(new BinaryTreeNode<>(
-                node.getValue(),
-                node.getLeft(),
-                newRight
-            ));
-        } else {
-            // Node to be removed found
-            if (node.getLeft() == null) {
-                return node.getRight();
-            }
-            if (node.getRight() == null) {
-                return node.getLeft();
-            }
-
-            // Node with two children
-            BinaryTreeNode<T> minNode = findMin(node.getRight());
-            return balance(new BinaryTreeNode<>(
-                minNode.getValue(),
-                node.getLeft(),
-                removeMin(node.getRight())
-            ));
-        }
+    
+    // ========== Collection interface methods ==========
+    
+    @Override
+    public boolean add(T e) {
+        // For PersistentBinaryTree, add() should throw since we're immutable
+        // Users should use transactional wrapper
+        throw new UnsupportedOperationException(
+            "PersistentBinaryTree is immutable. Use TransactionalPersistentTree wrapper for mutable operations.");
     }
-
-    private boolean contains(final BinaryTreeNode<T> node, final T value) {
-        if (node == null) {
+    
+    @Override
+    public boolean remove(Object o) {
+        throw new UnsupportedOperationException(
+            "PersistentBinaryTree is immutable. Use TransactionalPersistentTree wrapper for mutable operations.");
+    }
+    
+    @Override
+    public boolean contains(Object o) {
+        try {
+            @SuppressWarnings("unchecked")
+            T element = (T) o;
+            return containsElement(element);
+        } catch (ClassCastException e) {
             return false;
         }
+    }
+    
+    @Override
+    public int size() {
+        return Node.size(root);
+    }
+    
+    @Override
+    public boolean isEmpty() {
+        return size() == 0;
+    }
+    
+    @Override
+    public Iterator<T> iterator() {
+        return new TreeIterator();
+    }
+    
+    @Override
+    public Object[] toArray() {
+        Object[] array = new Object[size()];
+        int i = 0;
+        for (T element : this) {
+            array[i++] = element;
+        }
+        return array;
+    }
+    
+    @Override
+    @SuppressWarnings("unchecked")
+    public <E> E[] toArray(E[] a) {
+        int size = size();
+        if (a.length < size) {
+            a = (E[]) java.lang.reflect.Array.newInstance(
+                a.getClass().getComponentType(), size);
+        }
+        
+        int i = 0;
+        for (T element : this) {
+            a[i++] = (E) element;
+        }
+        
+        if (a.length > size) {
+            a[size] = null;
+        }
+        
+        return a;
+    }
+    
+    @Override
+    public boolean containsAll(Collection<?> c) {
+        for (Object element : c) {
+            if (!contains(element)) {
+                return false;
+            }
+        }
+        return true;
+    }
+    
+    @Override
+    public boolean addAll(Collection<? extends T> c) {
+        throw new UnsupportedOperationException(
+            "PersistentBinaryTree is immutable. Use TransactionalPersistentTree wrapper for mutable operations.");
+    }
+    
+    @Override
+    public boolean removeAll(Collection<?> c) {
+        throw new UnsupportedOperationException(
+            "PersistentBinaryTree is immutable. Use TransactionalPersistentTree wrapper for mutable operations.");
+    }
+    
+    @Override
+    public boolean retainAll(Collection<?> c) {
+        throw new UnsupportedOperationException(
+            "PersistentBinaryTree is immutable. Use TransactionalPersistentTree wrapper for mutable operations.");
+    }
+    
+    @Override
+    public void clear() {
+        throw new UnsupportedOperationException(
+            "PersistentBinaryTree is immutable. Use TransactionalPersistentTree wrapper for mutable operations.");
+    }
+    
+    @Override
+    public Version getVersion() {
+        // Generate version based on content hash
+        return new SimpleVersion();
+    }
+    
+    @Override
+    public PersistentStructure<T> snapshot() {
+        return this; // Already immutable
+    }
+    
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Collection)) return false;
+        
+        Collection<?> that = (Collection<?>) o;
+        if (size() != that.size()) return false;
+        
+        Iterator<T> it1 = iterator();
+        Iterator<?> it2 = that.iterator();
+        
+        while (it1.hasNext() && it2.hasNext()) {
+            if (!Objects.equals(it1.next(), it2.next())) {
+                return false;
+            }
+        }
+        
+        return !it1.hasNext() && !it2.hasNext();
+    }
+    
+    @Override
+    public int hashCode() {
+        int result = 1;
+        for (T element : this) {
+            result = 31 * result + (element == null ? 0 : element.hashCode());
+        }
+        return result;
+    }
+    
+    @Override
+    public String toString() {
+        Iterator<T> it = iterator();
+        if (!it.hasNext())
+            return "[]";
 
-        int cmp = value.compareTo(node.getValue());
-        if (cmp < 0) {
-            return contains(node.getLeft(), value);
-        } else if (cmp > 0) {
-            return contains(node.getRight(), value);
-        } else {
-            return true;
+        StringBuilder sb = new StringBuilder();
+        sb.append('[');
+        for (;;) {
+            T e = it.next();
+            sb.append(e == this ? "(this Collection)" : e);
+            if (!it.hasNext())
+                return sb.append(']').toString();
+            sb.append(',').append(' ');
         }
     }
-
-    private BinaryTreeNode<T> findMin(final BinaryTreeNode<T> node) {
-        BinaryTreeNode<T> current = node;
-        while (current.getLeft() != null) {
-            current = current.getLeft();
+    
+    // ========== Tree operations ==========
+    
+    private boolean contains(Node<T> node, T value) {
+        if (value == null) return false;
+        
+        while (node != null) {
+            int cmp = value.compareTo(node.value);
+            if (cmp < 0) {
+                node = node.left;
+            } else if (cmp > 0) {
+                node = node.right;
+            } else {
+                return true;
+            }
         }
-        return current;
+        return false;
     }
-
-    private BinaryTreeNode<T> findMax(final BinaryTreeNode<T> node) {
-        BinaryTreeNode<T> current = node;
-        while (current.getRight() != null) {
-            current = current.getRight();
+    
+    private Node<T> insert(Node<T> node, T value) {
+        if (value == null) {
+            return node; // Don't insert null
         }
-        return current;
-    }
-
-    private BinaryTreeNode<T> removeMin(final BinaryTreeNode<T> node) {
-        if (node.getLeft() == null) {
-            return node.getRight();
-        }
-        BinaryTreeNode<T> newLeft = removeMin(node.getLeft());
-        return balance(new BinaryTreeNode<>(
-            node.getValue(),
-            newLeft,
-            node.getRight()
-        ));
-    }
-
-    private BinaryTreeNode<T> balance(final BinaryTreeNode<T> node) {
+        
         if (node == null) {
-            return null;
+            return new Node<>(value, null, null);
         }
-
-        int balanceFactor = node.getBalanceFactor();
-
-        // Left heavy
+        
+        int cmp = value.compareTo(node.value);
+        if (cmp < 0) {
+            Node<T> newLeft = insert(node.left, value);
+            if (newLeft == node.left) {
+                return node; // No change
+            }
+            return balance(new Node<>(node.value, newLeft, node.right));
+        } else if (cmp > 0) {
+            Node<T> newRight = insert(node.right, value);
+            if (newRight == node.right) {
+                return node; // No change
+            }
+            return balance(new Node<>(node.value, node.left, newRight));
+        } else {
+            return node; // Value already exists
+        }
+    }
+    
+    private Node<T> delete(Node<T> node, T value) {
+        if (value == null || node == null) {
+            return node;
+        }
+        
+        int cmp = value.compareTo(node.value);
+        if (cmp < 0) {
+            Node<T> newLeft = delete(node.left, value);
+            if (newLeft == node.left) {
+                return node;
+            }
+            return balance(new Node<>(node.value, newLeft, node.right));
+        } else if (cmp > 0) {
+            Node<T> newRight = delete(node.right, value);
+            if (newRight == node.right) {
+                return node;
+            }
+            return balance(new Node<>(node.value, node.left, newRight));
+        } else {
+            // Node to delete found
+            if (node.left == null) {
+                return node.right;
+            }
+            if (node.right == null) {
+                return node.left;
+            }
+            
+            // Node with two children
+            Node<T> minNode = findMin(node.right);
+            Node<T> newRight = deleteMin(node.right);
+            return balance(new Node<>(minNode.value, node.left, newRight));
+        }
+    }
+    
+    private Node<T> balance(Node<T> node) {
+        if (node == null) return null;
+        
+        int balanceFactor = node.balanceFactor();
+        
         if (balanceFactor > 1) {
-            if (node.getLeft().getBalanceFactor() < 0) {
+            if (node.left.balanceFactor() < 0) {
                 // Left-Right case
-                return rotateRight(new BinaryTreeNode<>(
-                    node.getValue(),
-                    rotateLeft(node.getLeft()),
-                    node.getRight()
+                return rotateRight(new Node<>(
+                    node.value,
+                    rotateLeft(node.left),
+                    node.right
                 ));
             }
             // Left-Left case
             return rotateRight(node);
         }
-
-        // Right heavy
+        
         if (balanceFactor < -1) {
-            if (node.getRight().getBalanceFactor() > 0) {
+            if (node.right.balanceFactor() > 0) {
                 // Right-Left case
-                return rotateLeft(new BinaryTreeNode<>(
-                    node.getValue(),
-                    node.getLeft(),
-                    rotateRight(node.getRight())
+                return rotateLeft(new Node<>(
+                    node.value,
+                    node.left,
+                    rotateRight(node.right)
                 ));
             }
             // Right-Right case
             return rotateLeft(node);
         }
-
+        
         return node;
     }
-
-    private BinaryTreeNode<T> rotateRight(final BinaryTreeNode<T> y) {
-        BinaryTreeNode<T> x = y.getLeft();
-        BinaryTreeNode<T> t2 = x.getRight();
-
-        return new BinaryTreeNode<>(
-            x.getValue(),
-            x.getLeft(),
-            new BinaryTreeNode<>(y.getValue(), t2, y.getRight())
+    
+    private Node<T> rotateRight(Node<T> y) {
+        Node<T> x = y.left;
+        Node<T> t2 = x.right;
+        
+        return new Node<>(
+            x.value,
+            x.left,
+            new Node<>(y.value, t2, y.right)
         );
     }
-
-    private BinaryTreeNode<T> rotateLeft(final BinaryTreeNode<T> x) {
-        BinaryTreeNode<T> y = x.getRight();
-        BinaryTreeNode<T> t2 = y.getLeft();
-
-        return new BinaryTreeNode<>(
-            y.getValue(),
-            new BinaryTreeNode<>(x.getValue(), x.getLeft(), t2),
-            y.getRight()
+    
+    private Node<T> rotateLeft(Node<T> x) {
+        Node<T> y = x.right;
+        Node<T> t2 = y.left;
+        
+        return new Node<>(
+            y.value,
+            new Node<>(x.value, x.left, t2),
+            y.right
         );
     }
-
-    private boolean isBalanced(final BinaryTreeNode<T> node) {
-        if (node == null) {
-            return true;
+    
+    private Node<T> findMin(Node<T> node) {
+        while (node.left != null) {
+            node = node.left;
         }
-
-        int balanceFactor = node.getBalanceFactor();
+        return node;
+    }
+    
+    private Node<T> findMax(Node<T> node) {
+        while (node.right != null) {
+            node = node.right;
+        }
+        return node;
+    }
+    
+    private Node<T> deleteMin(Node<T> node) {
+        if (node.left == null) {
+            return node.right;
+        }
+        return balance(new Node<>(node.value, deleteMin(node.left), node.right));
+    }
+    
+    // ========== Iterator ==========
+    
+    private class TreeIterator implements Iterator<T> {
+        private final List<T> elements;
+        private int currentIndex;
+        
+        TreeIterator() {
+            this.elements = new ArrayList<>();
+            inOrderTraversal(root, elements::add);
+            this.currentIndex = 0;
+        }
+        
+        @Override
+        public boolean hasNext() {
+            return currentIndex < elements.size();
+        }
+        
+        @Override
+        public T next() {
+            if (!hasNext()) {
+                throw new NoSuchElementException();
+            }
+            return elements.get(currentIndex++);
+        }
+        
+        @Override
+        public void remove() {
+            throw new UnsupportedOperationException(
+                "Persistent structures are immutable");
+        }
+    }
+    
+    private void inOrderTraversal(Node<T> node, java.util.function.Consumer<T> action) {
+        if (node != null) {
+            inOrderTraversal(node.left, action);
+            action.accept(node.value);
+            inOrderTraversal(node.right, action);
+        }
+    }
+    
+    // ========== Utility methods ==========
+    
+    public T min() {
+        if (root == null) {
+            throw new NoSuchElementException("Tree is empty");
+        }
+        return findMin(root).value;
+    }
+    
+    public T max() {
+        if (root == null) {
+            throw new NoSuchElementException("Tree is empty");
+        }
+        return findMax(root).value;
+    }
+    
+    public int height() {
+        return Node.height(root);
+    }
+    
+    public boolean isBalanced() {
+        return isBalanced(root);
+    }
+    
+    private boolean isBalanced(Node<T> node) {
+        if (node == null) return true;
+        
+        int balanceFactor = node.balanceFactor();
         if (Math.abs(balanceFactor) > 1) {
             return false;
         }
-
-        return isBalanced(node.getLeft()) && isBalanced(node.getRight());
-    }
-
-    private void inOrderTraversal(final BinaryTreeNode<T> node,
-        final Consumer<T> action) {
-        if (node != null) {
-            inOrderTraversal(node.getLeft(), action);
-            action.accept(node.getValue());
-            inOrderTraversal(node.getRight(), action);
-        }
-    }
-
-    private void preOrderTraversal(final BinaryTreeNode<T> node,
-        final Consumer<T> action) {
-        if (node != null) {
-            action.accept(node.getValue());
-            preOrderTraversal(node.getLeft(), action);
-            preOrderTraversal(node.getRight(), action);
-        }
-    }
-
-    private void postOrderTraversal(final BinaryTreeNode<T> node,
-        final Consumer<T> action) {
-        if (node != null) {
-            postOrderTraversal(node.getLeft(), action);
-            postOrderTraversal(node.getRight(), action);
-            action.accept(node.getValue());
-        }
-    }
-
-    private List<T> inOrderList() {
-        List<T> result = new ArrayList<>();
-        inOrderTraversal(root, result::add);
-        return result;
-    }
-
-    @Override
-    public final String toString() {
-        List<String> elements = new ArrayList<>();
-        inOrderTraversal(value -> elements.add(value.toString()));
-        return "PersistentBinaryTree[" + String.join(", ", elements) + "]";
+        
+        return isBalanced(node.left) && isBalanced(node.right);
     }
 }
