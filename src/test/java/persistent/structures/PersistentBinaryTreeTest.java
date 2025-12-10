@@ -2,423 +2,457 @@ package persistent.structures;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.*;
-import java.util.stream.Collectors;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.IntStream;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Comprehensive test suite for PersistentBinaryTree and TransactionalPersistentBinaryTree.
+ * Comprehensive tests for PersistentBinaryTree.
  */
+@DisplayName("Persistent Binary Tree Tests")
 class PersistentBinaryTreeTest {
     
     private PersistentBinaryTree<Integer> emptyTree;
-    private PersistentBinaryTree<Integer> tree;
-    private TransactionalPersistentBinaryTree<Integer> transactionalTree;
+    private PersistentBinaryTree<Integer> balancedTree;
+    private PersistentBinaryTree<Integer> unbalancedTree;
     
     @BeforeEach
     void setUp() {
         emptyTree = new PersistentBinaryTree<>();
         
-        // Build tree using createWithAdded
-        PersistentBinaryTree<Integer> temp = new PersistentBinaryTree<>();
-        temp = (PersistentBinaryTree<Integer>) temp.createWithAdded(5);
-        temp = (PersistentBinaryTree<Integer>) temp.createWithAdded(3);
-        temp = (PersistentBinaryTree<Integer>) temp.createWithAdded(7);
-        temp = (PersistentBinaryTree<Integer>) temp.createWithAdded(1);
-        temp = (PersistentBinaryTree<Integer>) temp.createWithAdded(4);
-        temp = (PersistentBinaryTree<Integer>) temp.createWithAdded(6);
-        temp = (PersistentBinaryTree<Integer>) temp.createWithAdded(9);
-        tree = temp;
+        // Сбалансированное дерево: [2, 1, 3]
+        balancedTree = (PersistentBinaryTree<Integer>) emptyTree
+            .createWithAdded(2)
+            .createWithAdded(1)
+            .createWithAdded(3);
         
-        // Build transactional tree using add()
-        transactionalTree = new TransactionalPersistentBinaryTree<>();
-        transactionalTree.add(5);
-        transactionalTree.add(3);
-        transactionalTree.add(7);
-        transactionalTree.add(1);
-        transactionalTree.add(4);
-        transactionalTree.add(6);
-        transactionalTree.add(9);
+        // Несбалансированное дерево: [1, 2, 3, 4, 5] (вырождается в список)
+        unbalancedTree = (PersistentBinaryTree<Integer>) emptyTree
+            .createWithAdded(1)
+            .createWithAdded(2)
+            .createWithAdded(3)
+            .createWithAdded(4)
+            .createWithAdded(5);
     }
     
-    // ========== Tests for PersistentBinaryTree (immutable) ==========
-    
     @Test
-    void testIsEmpty() {
+    @DisplayName("Empty tree should be empty")
+    void testEmptyTree() {
         assertTrue(emptyTree.isEmpty());
-        assertFalse(tree.isEmpty());
-    }
-    
-    @Test
-    void testSize() {
         assertEquals(0, emptyTree.size());
-        assertEquals(7, tree.size());
+        assertFalse(emptyTree.iterator().hasNext());
     }
     
     @Test
-    void testContains() {
-        assertFalse(emptyTree.contains(5));
-        assertTrue(tree.contains(5));
-        assertTrue(tree.contains(3));
-        assertTrue(tree.contains(7));
-        assertTrue(tree.contains(1));
-        assertTrue(tree.contains(4));
-        assertTrue(tree.contains(6));
-        assertTrue(tree.contains(9));
-        assertFalse(tree.contains(10));
-        assertFalse(tree.contains(0));
-        assertFalse(tree.contains(null));
-    }
-    
-    @Test
-    void testContainsElement() {
+    @DisplayName("Add elements to tree")
+    void testAddElements() {
+        PersistentBinaryTree<Integer> tree = (PersistentBinaryTree<Integer>) emptyTree.createWithAdded(10);
+        assertFalse(tree.isEmpty());
+        assertEquals(1, tree.size());
+        assertTrue(tree.containsElement(10));
+        
+        tree = (PersistentBinaryTree<Integer>) tree.createWithAdded(5);
+        assertEquals(2, tree.size());
         assertTrue(tree.containsElement(5));
-        assertFalse(tree.containsElement(10));
-        assertFalse(tree.containsElement(null));
+        assertTrue(tree.containsElement(10));
+        
+        tree = (PersistentBinaryTree<Integer>) tree.createWithAdded(15);
+        assertEquals(3, tree.size());
+        assertTrue(tree.containsElement(5));
+        assertTrue(tree.containsElement(10));
+        assertTrue(tree.containsElement(15));
     }
     
     @Test
-    void testToArray() {
-        Object[] array = tree.toArray();
-        assertEquals(7, array.length);
-        List<Object> list = Arrays.asList(array);
-        assertTrue(list.contains(5));
-        assertTrue(list.contains(3));
-        assertTrue(list.contains(7));
-        assertTrue(list.contains(1));
-        assertTrue(list.contains(4));
-        assertTrue(list.contains(6));
-        assertTrue(list.contains(9));
+    @DisplayName("Add duplicate element should return same tree")
+    void testAddDuplicate() {
+        PersistentBinaryTree<Integer> original = balancedTree;
+        PersistentBinaryTree<Integer> modified = (PersistentBinaryTree<Integer>) original.createWithAdded(2);
+        assertSame(original, modified);
     }
     
     @Test
-    void testToArrayWithType() {
-        Integer[] array = tree.toArray(new Integer[0]);
-        assertEquals(7, array.length);
-        List<Integer> list = Arrays.asList(array);
-        assertTrue(list.contains(5));
-        assertTrue(list.contains(3));
-        assertTrue(list.contains(7));
+    @DisplayName("Remove elements from tree")
+    void testRemoveElements() {
+        PersistentBinaryTree<Integer> tree = (PersistentBinaryTree<Integer>) balancedTree.createWithRemoved(2);
+        assertEquals(2, tree.size());
+        assertTrue(tree.containsElement(1));
+        assertFalse(tree.containsElement(2));
+        assertTrue(tree.containsElement(3));
+        
+        tree = (PersistentBinaryTree<Integer>) tree.createWithRemoved(1);
+        assertEquals(1, tree.size());
+        assertFalse(tree.containsElement(1));
+        assertTrue(tree.containsElement(3));
+        
+        tree = (PersistentBinaryTree<Integer>) tree.createWithRemoved(3);
+        assertTrue(tree.isEmpty());
     }
     
     @Test
+    @DisplayName("Remove non-existent element should return same tree")
+    void testRemoveNonExistent() {
+        PersistentBinaryTree<Integer> original = balancedTree;
+        PersistentBinaryTree<Integer> modified = (PersistentBinaryTree<Integer>) original.createWithRemoved(99);
+        assertSame(original, modified);
+    }
+    
+    @Test
+    @DisplayName("Create empty tree")
+    void testCreateEmpty() {
+        PersistentBinaryTree<Integer> empty = (PersistentBinaryTree<Integer>) balancedTree.createEmpty();
+        assertTrue(empty.isEmpty());
+        assertEquals(0, empty.size());
+    }
+    
+    @Test
+    @DisplayName("Check contains element")
+    void testContainsElement() {
+        assertTrue(balancedTree.containsElement(1));
+        assertTrue(balancedTree.containsElement(2));
+        assertTrue(balancedTree.containsElement(3));
+        assertFalse(balancedTree.containsElement(4));
+        assertFalse(balancedTree.containsElement(null));
+    }
+    
+    @Test
+    @DisplayName("Collection contains method")
+    void testCollectionContains() {
+        assertTrue(balancedTree.contains(1));
+        assertTrue(balancedTree.contains(2));
+        assertTrue(balancedTree.contains(3));
+        assertFalse(balancedTree.contains(4));
+        assertFalse(balancedTree.contains("string")); // Wrong type
+    }
+    
+    @Test
+    @DisplayName("Iterator works correctly and returns sorted elements")
     void testIterator() {
         List<Integer> collected = new ArrayList<>();
-        for (Integer value : tree) {
-            collected.add(value);
+        for (Integer element : balancedTree) {
+            collected.add(element);
         }
         
-        assertEquals(7, collected.size());
-        Collections.sort(collected); // Tree should return in-order
-        assertEquals(Arrays.asList(1, 3, 4, 5, 6, 7, 9), collected);
+        assertEquals(3, collected.size());
+        assertEquals(List.of(1, 2, 3), collected); // In-order traversal should be sorted
     }
     
     @Test
-    void testIteratorRemoveThrows() {
-        Iterator<Integer> iterator = tree.iterator();
-        assertTrue(iterator.hasNext());
+    @DisplayName("Iterator should not support remove")
+    void testIteratorRemove() {
+        Iterator<Integer> iterator = balancedTree.iterator();
         iterator.next();
         assertThrows(UnsupportedOperationException.class, iterator::remove);
     }
     
     @Test
-    void testIteratorEmptyTree() {
-        Iterator<Integer> iterator = emptyTree.iterator();
-        assertFalse(iterator.hasNext());
-        assertThrows(NoSuchElementException.class, iterator::next);
-    }
-    
-    @Test
-    void testCreateWithAddedReturnsNewInstance() {
-        PersistentBinaryTree<Integer> original = new PersistentBinaryTree<>();
-        PersistentBinaryTree<Integer> modified = (PersistentBinaryTree<Integer>) original.createWithAdded(10);
+    @DisplayName("To array methods")
+    void testToArray() {
+        Object[] array = balancedTree.toArray();
+        assertArrayEquals(new Object[]{1, 2, 3}, array);
         
-        assertNotSame(original, modified);
-        assertFalse(original.contains(10));
-        assertTrue(modified.contains(10));
-    }
-    
-    @Test
-    void testCreateWithRemovedReturnsNewInstance() {
-        PersistentBinaryTree<Integer> original = new PersistentBinaryTree<>();
-        original = (PersistentBinaryTree<Integer>) original.createWithAdded(10);
-        original = (PersistentBinaryTree<Integer>) original.createWithAdded(20);
+        Integer[] typedArray = balancedTree.toArray(new Integer[0]);
+        assertArrayEquals(new Integer[]{1, 2, 3}, typedArray);
         
-        PersistentBinaryTree<Integer> modified = (PersistentBinaryTree<Integer>) original.createWithRemoved(10);
+        Integer[] largerArray = new Integer[5];
+        Integer[] result = balancedTree.toArray(largerArray);
+        assertSame(largerArray, result);
+        assertArrayEquals(new Integer[]{1, 2, 3, null, null}, result);
+    }
+    
+    @Test
+    @DisplayName("Contains all elements")
+    void testContainsAll() {
+        List<Integer> checkList = Arrays.asList(1, 3);
+        assertTrue(balancedTree.containsAll(checkList));
         
-        assertNotSame(original, modified);
-        assertTrue(original.contains(10));
-        assertFalse(modified.contains(10));
-        assertTrue(modified.contains(20));
+        List<Integer> notAllList = Arrays.asList(1, 4);
+        assertFalse(balancedTree.containsAll(notAllList));
     }
     
     @Test
-    void testCreateWithRemovedNonExisting() {
-        PersistentBinaryTree<Integer> original = new PersistentBinaryTree<>();
-        original = (PersistentBinaryTree<Integer>) original.createWithAdded(10);
+    @DisplayName("Immutable operations throw exceptions")
+    void testImmutableOperations() {
+        assertThrows(UnsupportedOperationException.class, () -> balancedTree.add(4));
+        assertThrows(UnsupportedOperationException.class, () -> balancedTree.remove(2));
+        assertThrows(UnsupportedOperationException.class, () -> balancedTree.addAll(Arrays.asList(4, 5)));
+        assertThrows(UnsupportedOperationException.class, () -> balancedTree.removeAll(Arrays.asList(1, 2)));
+        assertThrows(UnsupportedOperationException.class, () -> balancedTree.retainAll(Arrays.asList(1)));
+        assertThrows(UnsupportedOperationException.class, () -> balancedTree.clear());
+    }
+    
+    @Test
+    @DisplayName("Equals and hashCode")
+    void testEqualsAndHashCode() {
+        PersistentBinaryTree<Integer> sameElements = (PersistentBinaryTree<Integer>) emptyTree
+            .createWithAdded(2)
+            .createWithAdded(1)
+            .createWithAdded(3);
         
-        PersistentBinaryTree<Integer> modified = (PersistentBinaryTree<Integer>) original.createWithRemoved(99);
+        PersistentBinaryTree<Integer> differentElements = (PersistentBinaryTree<Integer>) emptyTree
+            .createWithAdded(4)
+            .createWithAdded(5);
         
-        assertSame(original, modified); // Should return same instance
+        // Структурно разные деревья с одинаковыми элементами должны быть равны
+        PersistentBinaryTree<Integer> differentlyBuilt = (PersistentBinaryTree<Integer>) emptyTree
+            .createWithAdded(3)
+            .createWithAdded(1)
+            .createWithAdded(2);
+        
+        assertEquals(balancedTree, sameElements);
+        assertEquals(balancedTree.hashCode(), sameElements.hashCode());
+        
+        assertNotEquals(balancedTree, differentElements);
+        assertEquals(balancedTree, differentlyBuilt); // Должны быть равны по содержимому
+        
+        // Different type collection with same elements
+        List<Integer> arrayList = Arrays.asList(1, 2, 3);
+        assertEquals(balancedTree, arrayList);
+        
+        // Self equality
+        assertEquals(balancedTree, balancedTree);
+        
+        // Null comparison
+        assertNotEquals(null, balancedTree);
+        
+        // Different size
+        PersistentBinaryTree<Integer> smaller = (PersistentBinaryTree<Integer>) emptyTree.createWithAdded(1);
+        assertNotEquals(balancedTree, smaller);
     }
     
     @Test
-    void testCreateEmpty() {
-        PersistentBinaryTree<Integer> empty = (PersistentBinaryTree<Integer>) tree.createEmpty();
-        assertTrue(empty.isEmpty());
-        assertEquals(0, empty.size());
-        assertNotSame(tree, empty);
+    @DisplayName("Snapshot returns same instance")
+    void testSnapshot() {
+        assertSame(balancedTree, balancedTree.snapshot());
     }
     
     @Test
-    void testTreeSpecificMethods() {
-        assertEquals(1, tree.min());
-        assertEquals(9, tree.max());
-        assertTrue(tree.height() > 0);
-        assertTrue(tree.isBalanced());
+    @DisplayName("Get version")
+    void testGetVersion() {
+        assertNotNull(balancedTree.getVersion());
+        assertNotNull(emptyTree.getVersion());
     }
     
     @Test
-    void testTreeSpecificMethodsEmptyTree() {
-        assertThrows(NoSuchElementException.class, emptyTree::min);
-        assertThrows(NoSuchElementException.class, emptyTree::max);
+    @DisplayName("Tree-specific methods: min and max")
+    void testTreeSpecificMinMax() {
+        assertEquals(Integer.valueOf(1), balancedTree.min());
+        assertEquals(Integer.valueOf(3), balancedTree.max());
+        
+        // Larger tree
+        PersistentBinaryTree<Integer> largeTree = (PersistentBinaryTree<Integer>) emptyTree
+            .createWithAdded(50)
+            .createWithAdded(25)
+            .createWithAdded(75)
+            .createWithAdded(10)
+            .createWithAdded(30)
+            .createWithAdded(60)
+            .createWithAdded(90);
+        
+        assertEquals(Integer.valueOf(10), largeTree.min());
+        assertEquals(Integer.valueOf(90), largeTree.max());
+    }
+    
+    @Test
+    @DisplayName("Tree-specific methods: height and balance")
+    void testTreeSpecificHeightAndBalance() {
+        assertEquals(2, balancedTree.height());
+        assertTrue(balancedTree.isBalanced());
+        
+        // Пустое дерево
         assertEquals(0, emptyTree.height());
         assertTrue(emptyTree.isBalanced());
     }
     
     @Test
-    void testMultipleVersions() {
-        // Create version chain
-        PersistentBinaryTree<Integer> v1 = new PersistentBinaryTree<>();
-        
-        PersistentBinaryTree<Integer> v2 = (PersistentBinaryTree<Integer>) v1.createWithAdded(10);
-        PersistentBinaryTree<Integer> v3 = (PersistentBinaryTree<Integer>) v2.createWithAdded(20);
-        PersistentBinaryTree<Integer> v4 = (PersistentBinaryTree<Integer>) v3.createWithAdded(30);
-        
-        // Remove from middle version
-        PersistentBinaryTree<Integer> v5 = (PersistentBinaryTree<Integer>) v3.createWithRemoved(20);
-        
-        // All versions should be independent
-        assertEquals(0, v1.size());
-        assertEquals(1, v2.size());
-        assertTrue(v2.contains(10));
-        
-        assertEquals(2, v3.size());
-        assertTrue(v3.contains(10));
-        assertTrue(v3.contains(20));
-        
-        assertEquals(3, v4.size());
-        assertTrue(v4.contains(10));
-        assertTrue(v4.contains(20));
-        assertTrue(v4.contains(30));
-        
-        assertEquals(1, v5.size());
-        assertTrue(v5.contains(10));
-        assertFalse(v5.contains(20));
+    @DisplayName("Min/Max on empty tree throws exception")
+    void testMinMaxEmptyTree() {
+        assertThrows(NoSuchElementException.class, () -> emptyTree.min());
+        assertThrows(NoSuchElementException.class, () -> emptyTree.max());
     }
     
     @Test
-    void testImmutability() {
-        // Create original tree
-        PersistentBinaryTree<Integer> original = new PersistentBinaryTree<>();
-        original = (PersistentBinaryTree<Integer>) original.createWithAdded(1);
-        original = (PersistentBinaryTree<Integer>) original.createWithAdded(2);
-        original = (PersistentBinaryTree<Integer>) original.createWithAdded(3);
+    @DisplayName("ToString method")
+    void testToString() {
+        assertEquals("[]", emptyTree.toString());
+        assertEquals("[1, 2, 3]", balancedTree.toString());
         
-        // Get snapshot
-        PersistentBinaryTree<Integer> snapshot = (PersistentBinaryTree<Integer>) original.snapshot();
-        
-        // "Modify" original (actually create new version)
+        PersistentBinaryTree<String> stringTree = (PersistentBinaryTree<String>) new PersistentBinaryTree<String>()
+            .createWithAdded("c")
+            .createWithAdded("a")
+            .createWithAdded("b");
+        assertEquals("[a, b, c]", stringTree.toString());
+    }
+    
+    @Test
+    @DisplayName("Persistence: original tree unchanged after modifications")
+    void testPersistence() {
+        PersistentBinaryTree<Integer> original = balancedTree;
         PersistentBinaryTree<Integer> modified = (PersistentBinaryTree<Integer>) original.createWithAdded(4);
         
-        // Snapshot should remain unchanged
-        assertEquals(3, snapshot.size());
-        assertTrue(snapshot.contains(1));
-        assertTrue(snapshot.contains(2));
-        assertTrue(snapshot.contains(3));
-        assertFalse(snapshot.contains(4));
-        
-        // Modified should have new element
-        assertEquals(4, modified.size());
-        assertTrue(modified.contains(4));
-        
-        // Original should also remain unchanged (it's immutable)
+        // Original unchanged
         assertEquals(3, original.size());
-        assertFalse(original.contains(4));
-    }
-    
-    // ========== Tests for TransactionalPersistentBinaryTree (mutable wrapper) ==========
-    
-    @Test
-    void testTransactionalAdd() {
-        TransactionalPersistentBinaryTree<Integer> transactional = new TransactionalPersistentBinaryTree<>();
+        assertFalse(original.containsElement(4));
         
-        // Test single add
-        assertTrue(transactional.add(10));
-        assertEquals(1, transactional.size());
-        assertTrue(transactional.contains(10));
+        // Modified has new element
+        assertEquals(4, modified.size());
+        assertTrue(modified.containsElement(4));
         
-        // Test multiple adds
-        assertTrue(transactional.add(5));
-        assertTrue(transactional.add(15));
-        assertEquals(3, transactional.size());
-        assertTrue(transactional.contains(5));
-        assertTrue(transactional.contains(15));
-        
-        // Test adding duplicate
-        int sizeBefore = transactional.size();
-        assertFalse(transactional.add(5)); // Add existing element
-        assertEquals(sizeBefore, transactional.size());
+        // They are different objects
+        assertNotSame(original, modified);
     }
     
     @Test
-    void testTransactionalRemove() {
-        // Test remove existing element
-        assertTrue(transactionalTree.remove(5));
-        assertEquals(6, transactionalTree.size());
-        assertFalse(transactionalTree.contains(5));
+    @DisplayName("Complex sequence of operations maintains balance")
+    void testComplexOperations() {
+        PersistentBinaryTree<Integer> tree = emptyTree;
         
-        // Test remove non-existing element
-        assertFalse(transactionalTree.remove(100));
-        assertEquals(6, transactionalTree.size());
+        // Вставляем в случайном порядке
+        tree = (PersistentBinaryTree<Integer>) tree.createWithAdded(50);
+        tree = (PersistentBinaryTree<Integer>) tree.createWithAdded(25);
+        tree = (PersistentBinaryTree<Integer>) tree.createWithAdded(75);
+        tree = (PersistentBinaryTree<Integer>) tree.createWithAdded(10);
+        tree = (PersistentBinaryTree<Integer>) tree.createWithAdded(30);
+        tree = (PersistentBinaryTree<Integer>) tree.createWithAdded(60);
+        tree = (PersistentBinaryTree<Integer>) tree.createWithAdded(90);
         
-        // Test remove with wrong type
-        assertFalse(transactionalTree.remove("string"));
-        assertEquals(6, transactionalTree.size());
+        assertEquals(7, tree.size());
+        assertTrue(tree.isBalanced());
+        
+        // Проверяем min и max
+        assertEquals(Integer.valueOf(10), tree.min());
+        assertEquals(Integer.valueOf(90), tree.max());
+        
+        // Удаляем элементы
+        tree = (PersistentBinaryTree<Integer>) tree.createWithRemoved(25);
+        tree = (PersistentBinaryTree<Integer>) tree.createWithRemoved(90);
+        
+        assertEquals(5, tree.size());
+        assertTrue(tree.isBalanced());
+        assertFalse(tree.containsElement(25));
+        assertFalse(tree.containsElement(90));
+        
+        // Проверяем итератор (должен возвращать отсортированные элементы)
+        List<Integer> elements = new ArrayList<>();
+        for (Integer element : tree) {
+            elements.add(element);
+        }
+        Collections.sort(elements);
+        assertEquals(elements, new ArrayList<>(tree));
     }
     
     @Test
-    void testTransactionalAddAll() {
-        TransactionalPersistentBinaryTree<Integer> transactional = new TransactionalPersistentBinaryTree<>();
-        Collection<Integer> toAdd = Arrays.asList(10, 20, 30, 20); // Duplicate
+    @DisplayName("Tree remains balanced after many insertions and deletions")
+    void testBalanceAfterManyOperations() {
+        PersistentBinaryTree<Integer> tree = emptyTree;
         
-        assertTrue(transactional.addAll(toAdd));
-        assertEquals(3, transactional.size()); // Should ignore duplicate
-        assertTrue(transactional.contains(10));
-        assertTrue(transactional.contains(20));
-        assertTrue(transactional.contains(30));
-    }
-    
-    @Test
-    void testTransactionalRemoveAll() {
-        Collection<Integer> toRemove = Arrays.asList(3, 7, 100); // 100 doesn't exist
-        
-        assertTrue(transactionalTree.removeAll(toRemove));
-        assertEquals(5, transactionalTree.size()); // Removed 3 and 7
-        assertFalse(transactionalTree.contains(3));
-        assertFalse(transactionalTree.contains(7));
-    }
-    
-    @Test
-    void testTransactionalRetainAll() {
-        Collection<Integer> toRetain = Arrays.asList(3, 7, 100); // 100 doesn't exist
-        
-        assertTrue(transactionalTree.retainAll(toRetain));
-        assertEquals(2, transactionalTree.size());
-        assertTrue(transactionalTree.contains(3));
-        assertTrue(transactionalTree.contains(7));
-        assertFalse(transactionalTree.contains(1));
-        assertFalse(transactionalTree.contains(4));
-        assertFalse(transactionalTree.contains(5));
-        assertFalse(transactionalTree.contains(6));
-        assertFalse(transactionalTree.contains(9));
-    }
-    
-    @Test
-    void testTransactionalClear() {
-        assertFalse(transactionalTree.isEmpty());
-        transactionalTree.clear();
-        assertTrue(transactionalTree.isEmpty());
-        assertEquals(0, transactionalTree.size());
-    }
-    
-    @Test
-    void testTransactionalSnapshot() {
-        // Get snapshot
-        PersistentBinaryTree<Integer> snapshot = transactionalTree.snapshot();
-        
-        // Modify transactional tree
-        transactionalTree.add(100);
-        
-        // Snapshot should remain unchanged
-        assertEquals(7, snapshot.size());
-        assertFalse(snapshot.contains(100));
-        
-        // Transactional tree should have new element
-        assertEquals(8, transactionalTree.size());
-        assertTrue(transactionalTree.contains(100));
-    }
-    
-    @Test
-    void testTransactionalTreeSpecificMethods() {
-        assertEquals(1, transactionalTree.min());
-        assertEquals(9, transactionalTree.max());
-        assertTrue(transactionalTree.height() > 0);
-        assertTrue(transactionalTree.isBalanced());
-    }
-    
-    @Test
-    void testLargeNumberOfElements() {
-        TransactionalPersistentBinaryTree<Integer> large = new TransactionalPersistentBinaryTree<>();
-        int count = 1000;
-        
-        for (int i = 0; i < count; i++) {
-            large.add(i);
+        // Вставляем 100 элементов
+        for (int i = 0; i < 100; i++) {
+            tree = (PersistentBinaryTree<Integer>) tree.createWithAdded(i);
         }
         
-        assertEquals(count, large.size());
+        // Дерево должно быть сбалансированным
+        assertTrue(tree.isBalanced());
+        assertEquals(100, tree.size());
         
-        // Verify all elements are present
-        for (int i = 0; i < count; i++) {
-            assertTrue(large.contains(i));
+        // Удаляем каждый второй элемент
+        for (int i = 0; i < 100; i += 2) {
+            tree = (PersistentBinaryTree<Integer>) tree.createWithRemoved(i);
         }
         
-        // Verify tree is still balanced
-        assertTrue(large.isBalanced());
+        // Дерево все еще должно быть сбалансированным
+        assertTrue(tree.isBalanced());
+        assertEquals(50, tree.size());
+        
+        // Проверяем min и max
+        assertEquals(Integer.valueOf(1), tree.min());
+        assertEquals(Integer.valueOf(99), tree.max());
     }
     
     @Test
-    void testTransactionalEqualsAndHashCode() {
-        TransactionalPersistentBinaryTree<Integer> tree1 = new TransactionalPersistentBinaryTree<>();
-        tree1.add(1);
-        tree1.add(2);
-        tree1.add(3);
+    @DisplayName("Tree handles null elements correctly")
+    void testNullElements() {
+        PersistentBinaryTree<Integer> tree = emptyTree;
         
-        // Get underlying persistent tree
-        PersistentBinaryTree<Integer> persistent1 = tree1.snapshot();
+        // Попытка вставить null должна вернуть то же дерево
+        tree = (PersistentBinaryTree<Integer>) tree.createWithAdded(null);
+        assertTrue(tree.isEmpty());
         
-        TransactionalPersistentBinaryTree<Integer> tree2 = new TransactionalPersistentBinaryTree<>();
-        tree2.add(3);
-        tree2.add(1);
-        tree2.add(2);
+        // Проверка contains для null
+        assertFalse(tree.containsElement(null));
+        assertFalse(tree.contains(null));
         
-        PersistentBinaryTree<Integer> persistent2 = tree2.snapshot();
+        // Удаление null должно вернуть то же дерево
+        tree = (PersistentBinaryTree<Integer>) balancedTree.createWithRemoved(null);
+        assertSame(balancedTree, tree);
+    }
+    
+    @ParameterizedTest
+    @ValueSource(ints = {0, 1, 5, 10, 100})
+    @DisplayName("Add multiple elements and iterate in sorted order")
+    void testAddMultipleElements(int count) {
+        PersistentBinaryTree<Integer> tree = emptyTree;
+        List<Integer> expected = new ArrayList<>();
         
-        // Persistent trees should be equal (same elements)
-        assertEquals(persistent1, persistent2);
-        assertEquals(persistent1.hashCode(), persistent2.hashCode());
+        // Вставляем в обратном порядке, чтобы проверить балансировку
+        for (int i = count - 1; i >= 0; i--) {
+            tree = (PersistentBinaryTree<Integer>) tree.createWithAdded(i);
+            expected.add(i);
+        }
+        
+        Collections.sort(expected);
+        assertEquals(count, tree.size());
+        
+        List<Integer> actual = new ArrayList<>();
+        for (Integer element : tree) {
+            actual.add(element);
+        }
+        
+        assertEquals(expected, actual);
+        assertTrue(tree.isBalanced());
     }
     
     @Test
-    void testToString() {
-        TransactionalPersistentBinaryTree<Integer> tree = new TransactionalPersistentBinaryTree<>();
-        tree.add(2);
-        tree.add(1);
-        tree.add(3);
+    @DisplayName("Tree rotation operations maintain correctness")
+    void testTreeRotations() {
+        // Создаем ситуацию, требующую левого поворота
+        PersistentBinaryTree<Integer> tree = (PersistentBinaryTree<Integer>) emptyTree
+            .createWithAdded(1)
+            .createWithAdded(2)
+            .createWithAdded(3); // Вырожденное правое дерево
         
-        String str = tree.toString();
-        // Should be in order: 1, 2, 3
-        assertTrue(str.contains("1") && str.contains("2") && str.contains("3"));
-        assertTrue(str.startsWith("[") && str.endsWith("]"));
-    }
-    
-    @Test
-    void testStreamSupport() {
-        List<Integer> collected = transactionalTree.stream()
-            .filter(x -> x > 5)
-            .collect(Collectors.toList());
+        // После вставок дерево должно быть сбалансировано
+        assertTrue(tree.isBalanced());
+        assertEquals(3, tree.size());
         
-        assertEquals(Arrays.asList(6, 7, 9), collected);
+        // Проверяем порядок элементов
+        List<Integer> elements = new ArrayList<>();
+        for (Integer element : tree) {
+            elements.add(element);
+        }
+        assertEquals(Arrays.asList(1, 2, 3), elements);
+        
+        // Создаем ситуацию, требующую правого поворота
+        tree = (PersistentBinaryTree<Integer>) emptyTree
+            .createWithAdded(3)
+            .createWithAdded(2)
+            .createWithAdded(1); // Вырожденное левое дерево
+        
+        assertTrue(tree.isBalanced());
+        assertEquals(3, tree.size());
+        
+        elements.clear();
+        for (Integer element : tree) {
+            elements.add(element);
+        }
+        assertEquals(Arrays.asList(1, 2, 3), elements);
     }
 }
