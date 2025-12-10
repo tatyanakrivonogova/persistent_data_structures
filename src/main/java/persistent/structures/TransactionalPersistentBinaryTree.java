@@ -96,6 +96,9 @@ public class TransactionalPersistentBinaryTree<T extends Comparable<T>>
     
     @Override
     public boolean addAll(Collection<? extends T> c) {
+        if (c.isEmpty()) {
+            return false;
+        }
         return modify(tree -> {
             PersistentBinaryTree<T> result = tree;
             for (T element : c) {
@@ -107,31 +110,70 @@ public class TransactionalPersistentBinaryTree<T extends Comparable<T>>
     
     @Override
     public boolean removeAll(Collection<?> c) {
+        if (c.isEmpty()) {
+            return false;
+        }
         return modify(tree -> {
             PersistentBinaryTree<T> result = tree;
+            boolean changed = false;
             for (Object obj : c) {
                 try {
                     @SuppressWarnings("unchecked")
                     T element = (T) obj;
-                    result = (PersistentBinaryTree<T>) result.createWithRemoved(element);
+                    PersistentBinaryTree<T> newResult = (PersistentBinaryTree<T>) result.createWithRemoved(element);
+                    if (newResult != result) {
+                        changed = true;
+                        result = newResult;
+                    }
                 } catch (ClassCastException e) {
                     // Skip elements of wrong type
                 }
             }
-            return result;
+            return changed ? result : tree;
         });
     }
     
     @Override
     public boolean retainAll(Collection<?> c) {
+        if (c.isEmpty()) {
+            boolean wasEmpty = isEmpty();
+            if (wasEmpty) {
+                return false;
+            }
+            modify(tree -> new PersistentBinaryTree<>());
+            return true;
+        }
+        
         return modify(tree -> {
-            PersistentBinaryTree<T> result = new PersistentBinaryTree<>();
+            PersistentBinaryTree<T> newTree = new PersistentBinaryTree<>();
+            boolean changed = false;
+            
             for (T element : tree) {
                 if (c.contains(element)) {
-                    result = (PersistentBinaryTree<T>) result.createWithAdded(element);
+                    newTree = (PersistentBinaryTree<T>) newTree.createWithAdded(element);
+                } else {
+                    changed = true;
                 }
             }
-            return result;
+            
+            // Check if the new tree is different from the old one
+            if (!changed && tree.size() == newTree.size()) {
+                // Check if trees are actually equal
+                boolean treesEqual = true;
+                Iterator<T> it1 = tree.iterator();
+                Iterator<T> it2 = newTree.iterator();
+                while (it1.hasNext() && it2.hasNext()) {
+                    if (!it1.next().equals(it2.next())) {
+                        treesEqual = false;
+                        break;
+                    }
+                }
+                if (treesEqual && !it1.hasNext() && !it2.hasNext()) {
+                    return tree; // No changes
+                }
+            }
+            
+            return newTree;
         });
     }
     
