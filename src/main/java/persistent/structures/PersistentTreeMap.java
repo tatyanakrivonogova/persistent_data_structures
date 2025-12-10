@@ -22,7 +22,11 @@ import persistent.core.Version;
 public final class PersistentTreeMap<K extends Comparable<K>, V>
     implements PersistentStructure<Map.Entry<K, V>> {
 
-  /** Immutable tree node. */
+  /**
+    * Immutable tree node.
+    * @param <K> the type of keys, must implement Comparable<K>
+    * @param <V> the type of mapped values
+    */
   private static final class TreeNode<K extends Comparable<K>, V> {
     /** The key stored in this node. */
     private final K key;
@@ -99,7 +103,10 @@ public final class PersistentTreeMap<K extends Comparable<K>, V>
     this.root = null;
   }
 
-  /** Private constructor for internal use. */
+  /**
+   * Private constructor for internal use.
+   * @param newRoot new root node
+   */
   private PersistentTreeMap(final TreeNode<K, V> newRoot) {
     this.root = newRoot;
   }

@@ -27,7 +27,7 @@ class TransactionalPersistentTreeMapTest {
 
   /** Empty map for testing. */
   private TransactionalPersistentTreeMap<String, Integer> emptyMap;
-  
+
   /** Pre-populated map for testing. */
   private TransactionalPersistentTreeMap<String, Integer> map;
 
@@ -177,7 +177,7 @@ class TransactionalPersistentTreeMapTest {
     assertEquals(2, transactional.get("b"));
 
     // Add duplicate key with different value (should update)
-    Map.Entry<String, Integer> entry1Updated = 
+    Map.Entry<String, Integer> entry1Updated =
         new AbstractMap.SimpleEntry<>("a", 10);
     assertTrue(transactional.add(entry1Updated));
     assertEquals(2, transactional.size()); // Size unchanged
@@ -186,7 +186,8 @@ class TransactionalPersistentTreeMapTest {
 
   @Test
   void testTransactionalRemoveEntry() {
-    Map.Entry<String, Integer> entry = new AbstractMap.SimpleEntry<>("three", 3);
+    Map.Entry<String, Integer> entry =
+        new AbstractMap.SimpleEntry<>("three", 3);
 
     // Test remove existing entry
     assertTrue(map.remove(entry));
@@ -194,13 +195,13 @@ class TransactionalPersistentTreeMapTest {
     assertFalse(map.containsKey("three"));
 
     // Test remove with wrong value
-    Map.Entry<String, Integer> wrongValue = 
+    Map.Entry<String, Integer> wrongValue =
         new AbstractMap.SimpleEntry<>("two", 999);
     assertFalse(map.remove(wrongValue));
     assertEquals(4, map.size()); // Should not remove
 
     // Test remove non-existing key
-    Map.Entry<String, Integer> nonExisting = 
+    Map.Entry<String, Integer> nonExisting =
         new AbstractMap.SimpleEntry<>("six", 6);
     assertFalse(map.remove(nonExisting));
     assertEquals(4, map.size());
@@ -351,7 +352,7 @@ class TransactionalPersistentTreeMapTest {
     assertFalse(map.containsKey("five"));
 
     // Retain all (no change)
-    TransactionalPersistentTreeMap<String, Integer> copy = 
+    TransactionalPersistentTreeMap<String, Integer> copy =
         new TransactionalPersistentTreeMap<>();
     copy.put("x", 1);
     copy.put("y", 2);
@@ -412,7 +413,8 @@ class TransactionalPersistentTreeMapTest {
 
   @Test
   void testTransactionalCopy() {
-    TransactionalPersistentTreeMap<String, Integer> copy = map.transactionalCopy();
+    TransactionalPersistentTreeMap<String, Integer> copy =
+        map.transactionalCopy();
 
     // Should have same content
     assertEquals(map.size(), copy.size());
@@ -450,7 +452,7 @@ class TransactionalPersistentTreeMapTest {
 
   @Test
   void testTransactionalLargeNumberOfEntries() {
-    TransactionalPersistentTreeMap<Integer, String> large = 
+    TransactionalPersistentTreeMap<Integer, String> large =
         new TransactionalPersistentTreeMap<>();
     int count = 1000;
 
@@ -487,19 +489,22 @@ class TransactionalPersistentTreeMapTest {
           boolean treePut = transactional.put(key, value);
           Integer oldRefValue = reference.put(key, value);
           boolean refPut = oldRefValue == null || !oldRefValue.equals(value);
-          assertEquals(refPut, treePut, "Put operation mismatch for key: " + key);
+          assertEquals(refPut, treePut,
+            "Put operation mismatch for key: " + key);
           break;
 
         case 1: // Remove
           boolean treeRemove = transactional.removeKey(key);
           boolean refRemove = reference.remove(key) != null;
-          assertEquals(refRemove, treeRemove, "Remove operation mismatch for key: " + key);
+          assertEquals(refRemove, treeRemove,
+            "Remove operation mismatch for key: " + key);
           break;
 
         case 2: // Get/Contains
           boolean treeContains = transactional.containsKey(key);
           boolean refContains = reference.containsKey(key);
-          assertEquals(refContains, treeContains, "Contains mismatch for key: " + key);
+          assertEquals(refContains, treeContains,
+            "Contains mismatch for key: " + key);
           break;
         default:
           // Handle unexpected operation
@@ -507,7 +512,7 @@ class TransactionalPersistentTreeMapTest {
       }
 
       // Verify size matches
-      assertEquals(reference.size(), transactional.size(), 
+      assertEquals(reference.size(), transactional.size(),
           "Size mismatch at iteration " + i);
 
       // Verify all reference entries are in tree

@@ -11,8 +11,8 @@ import java.util.concurrent.atomic.AtomicReference;
  *
  * @param <E> the type of elements, must be Comparable
  */
-public final class TransactionalPersistentDoublyLinkedList<E extends Comparable<E>>
-    implements Collection<E> {
+public final class TransactionalPersistentDoublyLinkedList<E extends
+    Comparable<E>> implements Collection<E> {
 
   /** Atomic reference to the current version of the list. */
   private final AtomicReference<PersistentDoublyLinkedList<E>> currentRef;

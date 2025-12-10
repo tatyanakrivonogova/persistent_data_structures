@@ -3,7 +3,6 @@ package persistent.structures;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
