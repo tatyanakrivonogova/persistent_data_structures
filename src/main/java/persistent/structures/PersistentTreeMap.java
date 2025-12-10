@@ -450,8 +450,8 @@ public final class PersistentTreeMap<K extends Comparable<K>, V>
       if (newLeft == node.left) {
         // Check if we're updating existing key with same value
         TreeNode<K, V> existingLeft = get(node, key);
-        if (existingLeft != null &&
-          Objects.equals(existingLeft.value, value)) {
+        if (existingLeft != null
+          && Objects.equals(existingLeft.value, value)) {
           return node; // No change
         }
       }
@@ -462,8 +462,8 @@ public final class PersistentTreeMap<K extends Comparable<K>, V>
       if (newRight == node.right) {
         // Check if we're updating existing key with same value
         TreeNode<K, V> existingRight = get(node, key);
-        if (existingRight != null &&
-          Objects.equals(existingRight.value, value)) {
+        if (existingRight != null
+          && Objects.equals(existingRight.value, value)) {
           return node; // No change
         }
       }
