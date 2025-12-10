@@ -6,26 +6,41 @@ import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Transactional wrapper for persistent doubly linked lists that provides mutable Collection
- * interface. Implements the 6-step transaction process.
+ * Transactional wrapper for persistent doubly linked lists that provides
+ * mutable Collection interface. Implements the 6-step transaction process.
+ *
+ * @param <E> the type of elements, must be Comparable
  */
-public class TransactionalPersistentDoublyLinkedList<E extends Comparable<E>>
+public final class TransactionalPersistentDoublyLinkedList<E extends Comparable<E>>
     implements Collection<E> {
 
+  /** Atomic reference to the current version of the list. */
   private final AtomicReference<PersistentDoublyLinkedList<E>> currentRef;
 
+  /** Creates a new empty transactional list. */
   public TransactionalPersistentDoublyLinkedList() {
     this.currentRef = new AtomicReference<>(new PersistentDoublyLinkedList<>());
   }
 
-  public TransactionalPersistentDoublyLinkedList(PersistentDoublyLinkedList<E> initial) {
+  /**
+   * Creates a transactional list with the given initial state.
+   *
+   * @param initial the initial list state
+   */
+  public TransactionalPersistentDoublyLinkedList(
+      final PersistentDoublyLinkedList<E> initial) {
     this.currentRef = new AtomicReference<>(initial);
   }
 
-  /** Executes a modification operation atomically. */
+  /**
+   * Executes a modification operation atomically.
+   *
+   * @param operation the function to apply to the list
+   * @return true if the operation succeeded and changed the list
+   */
   private boolean modify(
-      java.util.function.Function<PersistentDoublyLinkedList<E>, PersistentDoublyLinkedList<E>>
-          operation) {
+      final java.util.function.Function<PersistentDoublyLinkedList<E>,
+      PersistentDoublyLinkedList<E>> operation) {
     while (true) {
       PersistentDoublyLinkedList<E> current = currentRef.get();
       PersistentDoublyLinkedList<E> newVersion = operation.apply(current);
@@ -42,23 +57,26 @@ public class TransactionalPersistentDoublyLinkedList<E extends Comparable<E>>
   }
 
   @Override
-  public boolean add(E e) {
-    return modify(list -> (PersistentDoublyLinkedList<E>) list.createWithAdded(e));
+  public boolean add(final E e) {
+    return modify(
+        list -> (PersistentDoublyLinkedList<E>) list.createWithAdded(e));
   }
 
   @Override
-  public boolean remove(Object o) {
+  public boolean remove(final Object o) {
     try {
       @SuppressWarnings("unchecked")
       E element = (E) o;
-      return modify(list -> (PersistentDoublyLinkedList<E>) list.createWithRemoved(element));
+      return modify(
+          list -> (PersistentDoublyLinkedList<E>) list.createWithRemoved(
+              element));
     } catch (ClassCastException e) {
       return false;
     }
   }
 
   @Override
-  public boolean contains(Object o) {
+  public boolean contains(final Object o) {
     return currentRef.get().contains(o);
   }
 
@@ -84,17 +102,17 @@ public class TransactionalPersistentDoublyLinkedList<E extends Comparable<E>>
 
   @Override
   @SuppressWarnings("unchecked")
-  public <T> T[] toArray(T[] a) {
+  public <T> T[] toArray(final T[] a) {
     return currentRef.get().toArray(a);
   }
 
   @Override
-  public boolean containsAll(Collection<?> c) {
+  public boolean containsAll(final Collection<?> c) {
     return currentRef.get().containsAll(c);
   }
 
   @Override
-  public boolean addAll(Collection<? extends E> c) {
+  public boolean addAll(final Collection<? extends E> c) {
     if (c.isEmpty()) {
       return false;
     }
@@ -102,14 +120,15 @@ public class TransactionalPersistentDoublyLinkedList<E extends Comparable<E>>
         list -> {
           PersistentDoublyLinkedList<E> result = list;
           for (E element : c) {
-            result = (PersistentDoublyLinkedList<E>) result.createWithAdded(element);
+            result = (PersistentDoublyLinkedList<E>) result.createWithAdded(
+                element);
           }
           return result;
         });
   }
 
   @Override
-  public boolean removeAll(Collection<?> c) {
+  public boolean removeAll(final Collection<?> c) {
     if (c.isEmpty()) {
       return false;
     }
@@ -122,7 +141,8 @@ public class TransactionalPersistentDoublyLinkedList<E extends Comparable<E>>
               @SuppressWarnings("unchecked")
               E element = (E) obj;
               PersistentDoublyLinkedList<E> newResult =
-                  (PersistentDoublyLinkedList<E>) result.createWithRemoved(element);
+                  (PersistentDoublyLinkedList<E>) result.createWithRemoved(
+                      element);
               if (newResult != result) {
                 changed = true;
                 result = newResult;
@@ -136,7 +156,7 @@ public class TransactionalPersistentDoublyLinkedList<E extends Comparable<E>>
   }
 
   @Override
-  public boolean retainAll(Collection<?> c) {
+  public boolean retainAll(final Collection<?> c) {
     if (c.isEmpty()) {
       boolean wasEmpty = isEmpty();
       clear();
@@ -145,12 +165,14 @@ public class TransactionalPersistentDoublyLinkedList<E extends Comparable<E>>
 
     return modify(
         list -> {
-          PersistentDoublyLinkedList<E> newList = new PersistentDoublyLinkedList<>();
+          PersistentDoublyLinkedList<E> newList =
+              new PersistentDoublyLinkedList<>();
           boolean changed = false;
 
           for (E element : list) {
             if (c.contains(element)) {
-              newList = (PersistentDoublyLinkedList<E>) newList.createWithAdded(element);
+              newList = (PersistentDoublyLinkedList<E>) newList.createWithAdded(
+                  element);
             } else {
               changed = true;
             }
@@ -170,34 +192,73 @@ public class TransactionalPersistentDoublyLinkedList<E extends Comparable<E>>
     modify(list -> new PersistentDoublyLinkedList<>());
   }
 
-  /** Returns the current immutable snapshot. */
+  /**
+   * Returns the current immutable snapshot.
+   *
+   * @return the current list snapshot
+   */
   public PersistentDoublyLinkedList<E> snapshot() {
     return currentRef.get();
   }
 
-  /** Returns a transactional wrapper for the current snapshot. */
+  /**
+   * Returns a transactional wrapper for the current snapshot.
+   *
+   * @return a new transactional wrapper for the current list
+   */
   public TransactionalPersistentDoublyLinkedList<E> transactionalCopy() {
     return new TransactionalPersistentDoublyLinkedList<>(currentRef.get());
   }
 
   // List-specific methods
 
-  public E get(int index) {
+  /**
+   * Returns the element at the specified position.
+   *
+   * @param index the index of the element
+   * @return the element at the specified position
+   */
+  public E get(final int index) {
     return currentRef.get().get(index);
   }
 
-  public boolean addFirst(E e) {
+  /**
+   * Adds the specified element to the beginning of the list.
+   *
+   * @param e the element to add
+   * @return true if the list changed as a result of the call
+   */
+  public boolean addFirst(final E e) {
     return modify(list -> list.addFirst(e));
   }
 
-  public boolean addLast(E e) {
+  /**
+   * Adds the specified element to the end of the list.
+   *
+   * @param e the element to add
+   * @return true if the list changed as a result of the call
+   */
+  public boolean addLast(final E e) {
     return modify(list -> list.addLast(e));
   }
 
-  public boolean add(int index, E element) {
+  /**
+   * Inserts the specified element at the specified position.
+   *
+   * @param index the index at which to insert
+   * @param element the element to insert
+   * @return true if the list changed as a result of the call
+   */
+  public boolean add(final int index, final E element) {
     return modify(list -> list.add(index, element));
   }
 
+  /**
+   * Removes and returns the first element of this list.
+   *
+   * @return the first element
+   * @throws NoSuchElementException if the list is empty
+   */
   public E removeFirst() {
     PersistentDoublyLinkedList<E> current = currentRef.get();
     if (current.isEmpty()) {
@@ -208,6 +269,12 @@ public class TransactionalPersistentDoublyLinkedList<E extends Comparable<E>>
     return first;
   }
 
+  /**
+   * Removes and returns the last element of this list.
+   *
+   * @return the last element
+   * @throws NoSuchElementException if the list is empty
+   */
   public E removeLast() {
     PersistentDoublyLinkedList<E> current = currentRef.get();
     if (current.isEmpty()) {
@@ -218,7 +285,13 @@ public class TransactionalPersistentDoublyLinkedList<E extends Comparable<E>>
     return last;
   }
 
-  public E remove(int index) {
+  /**
+   * Removes the element at the specified position.
+   *
+   * @param index the index of the element to remove
+   * @return the element that was removed
+   */
+  public E remove(final int index) {
     PersistentDoublyLinkedList<E> current = currentRef.get();
     E element = current.get(index);
     modify(list -> list.remove(index));

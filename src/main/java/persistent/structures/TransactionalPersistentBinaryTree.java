@@ -5,24 +5,41 @@ import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Transactional wrapper for persistent trees that provides mutable Collection interface. Implements
- * the 6-step transaction process.
+ * Transactional wrapper for persistent trees that provides mutable Collection
+ * interface. Implements the 6-step transaction process.
+ *
+ * @param <T> the type of elements, must be Comparable
  */
-public class TransactionalPersistentBinaryTree<T extends Comparable<T>> implements Collection<T> {
+public final class TransactionalPersistentBinaryTree<T extends Comparable<T>>
+    implements Collection<T> {
 
+  /** Atomic reference to the current version of the tree. */
   private final AtomicReference<PersistentBinaryTree<T>> currentRef;
 
+  /** Creates a new empty transactional tree. */
   public TransactionalPersistentBinaryTree() {
     this.currentRef = new AtomicReference<>(new PersistentBinaryTree<>());
   }
 
-  public TransactionalPersistentBinaryTree(PersistentBinaryTree<T> initial) {
+  /**
+   * Creates a transactional tree with the given initial state.
+   *
+   * @param initial the initial tree state
+   */
+  public TransactionalPersistentBinaryTree(
+      final PersistentBinaryTree<T> initial) {
     this.currentRef = new AtomicReference<>(initial);
   }
 
-  /** Executes a modification operation atomically. */
+  /**
+   * Executes a modification operation atomically.
+   *
+   * @param operation the function to apply to the tree
+   * @return true if the operation succeeded and changed the tree
+   */
   private boolean modify(
-      java.util.function.Function<PersistentBinaryTree<T>, PersistentBinaryTree<T>> operation) {
+      final java.util.function.Function<PersistentBinaryTree<T>,
+      PersistentBinaryTree<T>> operation) {
     while (true) {
       PersistentBinaryTree<T> current = currentRef.get();
       PersistentBinaryTree<T> newVersion = operation.apply(current);
@@ -39,23 +56,24 @@ public class TransactionalPersistentBinaryTree<T extends Comparable<T>> implemen
   }
 
   @Override
-  public boolean add(T e) {
+  public boolean add(final T e) {
     return modify(tree -> (PersistentBinaryTree<T>) tree.createWithAdded(e));
   }
 
   @Override
-  public boolean remove(Object o) {
+  public boolean remove(final Object o) {
     try {
       @SuppressWarnings("unchecked")
       T element = (T) o;
-      return modify(tree -> (PersistentBinaryTree<T>) tree.createWithRemoved(element));
+      return modify(
+          tree -> (PersistentBinaryTree<T>) tree.createWithRemoved(element));
     } catch (ClassCastException e) {
       return false;
     }
   }
 
   @Override
-  public boolean contains(Object o) {
+  public boolean contains(final Object o) {
     return currentRef.get().contains(o);
   }
 
@@ -81,17 +99,17 @@ public class TransactionalPersistentBinaryTree<T extends Comparable<T>> implemen
 
   @Override
   @SuppressWarnings("unchecked")
-  public <E> E[] toArray(E[] a) {
+  public <E> E[] toArray(final E[] a) {
     return currentRef.get().toArray(a);
   }
 
   @Override
-  public boolean containsAll(Collection<?> c) {
+  public boolean containsAll(final Collection<?> c) {
     return currentRef.get().containsAll(c);
   }
 
   @Override
-  public boolean addAll(Collection<? extends T> c) {
+  public boolean addAll(final Collection<? extends T> c) {
     if (c.isEmpty()) {
       return false;
     }
@@ -106,7 +124,7 @@ public class TransactionalPersistentBinaryTree<T extends Comparable<T>> implemen
   }
 
   @Override
-  public boolean removeAll(Collection<?> c) {
+  public boolean removeAll(final Collection<?> c) {
     if (c.isEmpty()) {
       return false;
     }
@@ -133,7 +151,7 @@ public class TransactionalPersistentBinaryTree<T extends Comparable<T>> implemen
   }
 
   @Override
-  public boolean retainAll(Collection<?> c) {
+  public boolean retainAll(final Collection<?> c) {
     if (c.isEmpty()) {
       boolean wasEmpty = isEmpty();
       if (wasEmpty) {
@@ -150,7 +168,8 @@ public class TransactionalPersistentBinaryTree<T extends Comparable<T>> implemen
 
           for (T element : tree) {
             if (c.contains(element)) {
-              newTree = (PersistentBinaryTree<T>) newTree.createWithAdded(element);
+              newTree = (PersistentBinaryTree<T>) newTree.createWithAdded(
+                  element);
             } else {
               changed = true;
             }
@@ -182,29 +201,58 @@ public class TransactionalPersistentBinaryTree<T extends Comparable<T>> implemen
     modify(tree -> new PersistentBinaryTree<>());
   }
 
-  /** Returns the current immutable snapshot. */
+  /**
+   * Returns the current immutable snapshot.
+   *
+   * @return the current tree snapshot
+   */
   public PersistentBinaryTree<T> snapshot() {
     return currentRef.get();
   }
 
-  /** Returns a transactional wrapper for the current snapshot. */
+  /**
+   * Returns a transactional wrapper for the current snapshot.
+   *
+   * @return a new transactional wrapper for the current tree
+   */
   public TransactionalPersistentBinaryTree<T> transactionalCopy() {
     return new TransactionalPersistentBinaryTree<>(currentRef.get());
   }
 
-  // Tree-specific methods
+  /**
+   * Returns the minimum element in this tree.
+   *
+   * @return the minimum element
+   * @throws java.util.NoSuchElementException if the tree is empty
+   */
   public T min() {
     return currentRef.get().min();
   }
 
+  /**
+   * Returns the maximum element in this tree.
+   *
+   * @return the maximum element
+   * @throws java.util.NoSuchElementException if the tree is empty
+   */
   public T max() {
     return currentRef.get().max();
   }
 
+  /**
+   * Returns the height of this tree.
+   *
+   * @return the height of the tree
+   */
   public int height() {
     return currentRef.get().height();
   }
 
+  /**
+   * Checks if this tree is balanced.
+   *
+   * @return true if the tree is balanced, false otherwise
+   */
   public boolean isBalanced() {
     return currentRef.get().isBalanced();
   }
