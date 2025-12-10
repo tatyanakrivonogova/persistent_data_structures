@@ -3,8 +3,8 @@ package persistent.core;
 import java.util.Collection;
 
 /**
- * Persistent structure that implements standard Collection interface while maintaining immutability
- * through versioning.
+ * Persistent structure that implements standard Collection interface while
+ * maintaining immutability through versioning.
  *
  * @param <T> the type of elements in this structure
  */
@@ -25,8 +25,8 @@ public interface PersistentStructure<T> extends Collection<T> {
   PersistentStructure<T> snapshot();
 
   /**
-   * Creates a new structure with the specified element added. Used internally for persistent
-   * operations.
+   * Creates a new structure with the specified element added. Used internally
+   * for persistent operations.
    *
    * @param element the element to add
    * @return new structure with the element added
@@ -34,8 +34,8 @@ public interface PersistentStructure<T> extends Collection<T> {
   PersistentStructure<T> createWithAdded(T element);
 
   /**
-   * Creates a new structure with the specified element removed. Used internally for persistent
-   * operations.
+   * Creates a new structure with the specified element removed. Used internally
+   * for persistent operations.
    *
    * @param element the element to remove
    * @return new structure with the element removed
@@ -43,7 +43,8 @@ public interface PersistentStructure<T> extends Collection<T> {
   PersistentStructure<T> createWithRemoved(T element);
 
   /**
-   * Creates an empty structure of the same type. Used internally for persistent operations.
+   * Creates an empty structure of the same type. Used internally for persistent
+   * operations.
    *
    * @return empty structure
    */

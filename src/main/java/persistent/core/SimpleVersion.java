@@ -3,9 +3,9 @@ package persistent.core;
 import java.util.UUID;
 
 /**
- * A simple implementation of the Version interface using UUID. This implementation provides version
- * identification with strong uniqueness guarantees and supports equality and hash code for use in
- * collections.
+ * A simple implementation of the Version interface using UUID. This
+ * implementation provides version identification with strong uniqueness
+ * guarantees and supports equality and hash code for use in collections.
  *
  * @version 2.0
  */
@@ -26,8 +26,8 @@ public class SimpleVersion implements Version {
   }
 
   /**
-   * Constructs a new SimpleVersion with a randomly generated UUID. This constructor is useful for
-   * creating new unique versions.
+   * Constructs a new SimpleVersion with a randomly generated UUID. This
+   * constructor is useful for creating new unique versions.
    */
   public SimpleVersion() {
     this(UUID.randomUUID());
@@ -60,8 +60,8 @@ public class SimpleVersion implements Version {
   }
 
   /**
-   * Compares this version with another object for equality. Two SimpleVersion objects are equal if
-   * they have the same UUID.
+   * Compares this version with another object for equality. Two SimpleVersion
+   * objects are equal if they have the same UUID.
    *
    * @param obj the object to compare with
    * @return true if the objects are equal, false otherwise
