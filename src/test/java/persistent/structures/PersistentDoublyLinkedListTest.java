@@ -67,8 +67,8 @@ class PersistentDoublyLinkedListTest {
   @Test
   @DisplayName("Remove elements from list")
   void testRemoveElements() {
-    PersistentDoublyLinkedList<Integer> list =
-        (PersistentDoublyLinkedList<Integer>) listWithElements.createWithRemoved(2);
+    PersistentDoublyLinkedList<Integer> list = (PersistentDoublyLinkedList<Integer>)
+        listWithElements.createWithRemoved(2);
     assertEquals(2, list.size());
     assertTrue(list.containsElement(1));
     assertFalse(list.containsElement(2));
@@ -172,7 +172,8 @@ class PersistentDoublyLinkedListTest {
 
     // Проверяем, что методы из Collection бросают исключения
     assertThrows(UnsupportedOperationException.class, () -> list.add(4));
-    assertThrows(UnsupportedOperationException.class, () -> list.remove((Object) 2));
+    assertThrows(UnsupportedOperationException.class,
+        () -> list.remove((Object) 2));
     assertThrows(UnsupportedOperationException.class,
         () -> list.addAll(Arrays.asList(4, 5)));
     assertThrows(UnsupportedOperationException.class,
@@ -195,7 +196,8 @@ class PersistentDoublyLinkedListTest {
             emptyList.createWithAdded(1).createWithAdded(2).createWithAdded(3);
 
     PersistentDoublyLinkedList<Integer> differentElements =
-        (PersistentDoublyLinkedList<Integer>) emptyList.createWithAdded(4).createWithAdded(5);
+        (PersistentDoublyLinkedList<Integer>) emptyList.createWithAdded(4)
+            .createWithAdded(5);
 
     assertEquals(listWithElements, sameElements);
     assertNotEquals(listWithElements, differentElements);
@@ -260,7 +262,7 @@ class PersistentDoublyLinkedListTest {
   }
 
   @Test
-  @DisplayName("List-specific methods: removeFirst, removeLast, remove at index")
+  @DisplayName("List methods: removeFirst, removeLast, remove at index")
   void testListSpecificRemoveMethods() {
     PersistentDoublyLinkedList<Integer> list =
         emptyList.addFirst(1).addLast(2).addLast(3).addLast(4); // [1, 2, 3, 4]

@@ -157,7 +157,8 @@ class PersistentBinaryTreeTest {
     }
 
     assertEquals(3, collected.size());
-    assertEquals(List.of(1, 2, 3), collected); // In-order traversal should be sorted
+    // In-order traversal should be sorted
+    assertEquals(List.of(1, 2, 3), collected);
   }
 
   @Test
@@ -196,15 +197,18 @@ class PersistentBinaryTreeTest {
   @Test
   @DisplayName("Immutable operations throw exceptions")
   void testImmutableOperations() {
-    assertThrows(UnsupportedOperationException.class, () -> balancedTree.add(4));
-    assertThrows(UnsupportedOperationException.class, () -> balancedTree.remove(2));
+    assertThrows(UnsupportedOperationException.class,
+        () -> balancedTree.add(4));
+    assertThrows(UnsupportedOperationException.class,
+        () -> balancedTree.remove(2));
     assertThrows(UnsupportedOperationException.class,
         () -> balancedTree.addAll(Arrays.asList(4, 5)));
     assertThrows(UnsupportedOperationException.class,
         () -> balancedTree.removeAll(Arrays.asList(1, 2)));
     assertThrows(UnsupportedOperationException.class,
         () -> balancedTree.retainAll(Arrays.asList(1)));
-    assertThrows(UnsupportedOperationException.class, () -> balancedTree.clear());
+    assertThrows(UnsupportedOperationException.class,
+        () -> balancedTree.clear());
   }
 
   @Test
@@ -215,7 +219,8 @@ class PersistentBinaryTreeTest {
             emptyTree.createWithAdded(2).createWithAdded(1).createWithAdded(3);
 
     PersistentBinaryTree<Integer> differentElements =
-        (PersistentBinaryTree<Integer>) emptyTree.createWithAdded(4).createWithAdded(5);
+        (PersistentBinaryTree<Integer>) emptyTree.createWithAdded(4)
+            .createWithAdded(5);
 
     // Структурно разные деревья с одинаковыми элементами должны быть равны
     PersistentBinaryTree<Integer> differentlyBuilt =
@@ -226,7 +231,7 @@ class PersistentBinaryTreeTest {
     assertEquals(balancedTree.hashCode(), sameElements.hashCode());
 
     assertNotEquals(balancedTree, differentElements);
-    assertEquals(balancedTree, differentlyBuilt); // Должны быть равны по содержимому
+    assertEquals(balancedTree, differentlyBuilt);
 
     // Different type collection with same elements
     List<Integer> arrayList = Arrays.asList(1, 2, 3);

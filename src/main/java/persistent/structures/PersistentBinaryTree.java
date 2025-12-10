@@ -19,7 +19,10 @@ import persistent.core.Version;
 public final class PersistentBinaryTree<T extends Comparable<T>>
     implements PersistentStructure<T> {
 
-  /** Immutable tree node. */
+  /**
+   * Immutable tree node.
+   * @param <T> type of element in node, should implement Comparable<T>
+   */
   private static final class Node<T extends Comparable<T>> {
     /** The value stored in this node. */
     private final T value;
@@ -88,7 +91,10 @@ public final class PersistentBinaryTree<T extends Comparable<T>>
     this.root = null;
   }
 
-  /** Private constructor for internal use. */
+  /**
+   * Private constructor for internal use.
+   * @param newRoot new root node
+   */
   private PersistentBinaryTree(final Node<T> newRoot) {
     this.root = newRoot;
   }
@@ -185,7 +191,7 @@ public final class PersistentBinaryTree<T extends Comparable<T>>
   public <E> E[] toArray(final E[] a) {
     int size = size();
     E[] result = a;
-    
+
     if (result.length < size) {
       result = (E[]) java.lang.reflect.Array.newInstance(
           a.getClass().getComponentType(), size);
