@@ -339,8 +339,8 @@ class PersistentTreeMapTest {
   void testRetainAllThrows() {
     Collection<Map.Entry<String, Integer>> entries =
         Arrays.asList(
-            new AbstractMap.SimpleEntry<>("one", 1),
-            new AbstractMap.SimpleEntry<>("two", 2));
+            new AbstractMap.SimpleEntry<>("one", 3),
+            new AbstractMap.SimpleEntry<>("two", 4));
 
     assertThrows(UnsupportedOperationException.class,
         () -> map.retainAll(entries));
