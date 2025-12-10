@@ -1,13 +1,16 @@
 package persistent.structures;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+import java.util.Objects;
 import persistent.core.PersistentStructure;
 import persistent.core.SimpleVersion;
 import persistent.core.Version;
 
 /**
- * Persistent, immutable doubly linked list implementation. Uses wrapper pattern for transactional
- * updates.
+ * Persistent, immutable doubly linked list implementation. Uses wrapper
+ * pattern for transactional updates.
  *
  * @param <E> element type
  */
@@ -90,12 +93,12 @@ public final class PersistentDoublyLinkedList<E extends Comparable<E>>
   // ========== PersistentStructure interface implementations ==========
 
   @Override
-  public PersistentStructure<E> createWithAdded(E element) {
+  public PersistentStructure<E> createWithAdded(final E element) {
     return add(size, element);
   }
 
   @Override
-  public PersistentStructure<E> createWithRemoved(E element) {
+  public PersistentStructure<E> createWithRemoved(final E element) {
     Node<E> current = head;
     int index = 0;
     while (current != null) {
@@ -114,7 +117,7 @@ public final class PersistentDoublyLinkedList<E extends Comparable<E>>
   }
 
   @Override
-  public boolean containsElement(E element) {
+  public boolean containsElement(final E element) {
     Node<E> current = head;
     while (current != null) {
       if (Objects.equals(current.getValue(), element)) {
@@ -139,21 +142,21 @@ public final class PersistentDoublyLinkedList<E extends Comparable<E>>
   // ========== Collection interface methods ==========
 
   @Override
-  public boolean add(E e) {
+  public boolean add(final E e) {
     throw new UnsupportedOperationException(
-        "PersistentDoublyLinkedList is immutable. Use TransactionalPersistentList wrapper for"
-            + " mutable operations.");
+        "PersistentDoublyLinkedList is immutable. Use "
+            + "TransactionalPersistentList wrapper for mutable operations.");
   }
 
   @Override
-  public boolean remove(Object o) {
+  public boolean remove(final Object o) {
     throw new UnsupportedOperationException(
-        "PersistentDoublyLinkedList is immutable. Use TransactionalPersistentList wrapper for"
-            + " mutable operations.");
+        "PersistentDoublyLinkedList is immutable. Use "
+            + "TransactionalPersistentList wrapper for mutable operations.");
   }
 
   @Override
-  public boolean contains(Object o) {
+  public boolean contains(final Object o) {
     try {
       @SuppressWarnings("unchecked")
       E element = (E) o;
@@ -207,25 +210,27 @@ public final class PersistentDoublyLinkedList<E extends Comparable<E>>
 
   @Override
   @SuppressWarnings("unchecked")
-  public <T> T[] toArray(T[] a) {
-    if (a.length < size) {
-      a = (T[]) java.lang.reflect.Array.newInstance(a.getClass().getComponentType(), size);
+  public <T> T[] toArray(final T[] a) {
+    T[] result = a;
+    if (result.length < size) {
+      result = (T[]) java.lang.reflect.Array.newInstance(
+          a.getClass().getComponentType(), size);
     }
 
     int i = 0;
     for (E element : this) {
-      a[i++] = (T) element;
+      result[i++] = (T) element;
     }
 
-    if (a.length > size) {
-      a[size] = null;
+    if (result.length > size) {
+      result[size] = null;
     }
 
-    return a;
+    return result;
   }
 
   @Override
-  public boolean containsAll(Collection<?> c) {
+  public boolean containsAll(final Collection<?> c) {
     for (Object element : c) {
       if (!contains(element)) {
         return false;
@@ -235,40 +240,46 @@ public final class PersistentDoublyLinkedList<E extends Comparable<E>>
   }
 
   @Override
-  public boolean addAll(Collection<? extends E> c) {
+  public boolean addAll(final Collection<? extends E> c) {
     throw new UnsupportedOperationException(
-        "PersistentDoublyLinkedList is immutable. Use TransactionalPersistentList wrapper for"
-            + " mutable operations.");
+        "PersistentDoublyLinkedList is immutable. Use "
+            + "TransactionalPersistentList wrapper for mutable operations.");
   }
 
   @Override
-  public boolean removeAll(Collection<?> c) {
+  public boolean removeAll(final Collection<?> c) {
     throw new UnsupportedOperationException(
-        "PersistentDoublyLinkedList is immutable. Use TransactionalPersistentList wrapper for"
-            + " mutable operations.");
+        "PersistentDoublyLinkedList is immutable. Use "
+            + "TransactionalPersistentList wrapper for mutable operations.");
   }
 
   @Override
-  public boolean retainAll(Collection<?> c) {
+  public boolean retainAll(final Collection<?> c) {
     throw new UnsupportedOperationException(
-        "PersistentDoublyLinkedList is immutable. Use TransactionalPersistentList wrapper for"
-            + " mutable operations.");
+        "PersistentDoublyLinkedList is immutable. Use "
+            + "TransactionalPersistentList wrapper for mutable operations.");
   }
 
   @Override
   public void clear() {
     throw new UnsupportedOperationException(
-        "PersistentDoublyLinkedList is immutable. Use TransactionalPersistentList wrapper for"
-            + " mutable operations.");
+        "PersistentDoublyLinkedList is immutable. Use "
+            + "TransactionalPersistentList wrapper for mutable operations.");
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (!(o instanceof Collection)) return false;
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (!(o instanceof Collection)) {
+      return false;
+    }
 
     Collection<?> that = (Collection<?>) o;
-    if (size() != that.size()) return false;
+    if (size() != that.size()) {
+      return false;
+    }
 
     Iterator<E> it1 = iterator();
     Iterator<?> it2 = that.iterator();
@@ -284,9 +295,10 @@ public final class PersistentDoublyLinkedList<E extends Comparable<E>>
 
   @Override
   public int hashCode() {
+    final int prime = 31;
     int result = 1;
     for (E element : this) {
-      result = 31 * result + (element == null ? 0 : element.hashCode());
+      result = prime * result + (element == null ? 0 : element.hashCode());
     }
     return result;
   }
@@ -387,7 +399,8 @@ public final class PersistentDoublyLinkedList<E extends Comparable<E>>
       prevNewNode = lastNode;
     }
 
-    return new PersistentDoublyLinkedList<>(newHeadRef[0], prevNewNode, size + 1);
+    return new PersistentDoublyLinkedList<>(
+        newHeadRef[0], prevNewNode, size + 1);
   }
 
   /**
@@ -447,18 +460,21 @@ public final class PersistentDoublyLinkedList<E extends Comparable<E>>
       pos++;
     }
 
-    return new PersistentDoublyLinkedList<>(newHeadRef[0], prevNewNode, size - 1);
+    return new PersistentDoublyLinkedList<>(
+        newHeadRef[0], prevNewNode, size - 1);
   }
 
   /**
-   * Creates a copy of a node, links it to the previous one and updates headRef.
+   * Creates a copy of a node, links it to the previous one and updates
+   * headRef.
    *
    * @param source original node
    * @param headRef reference to newHead
    * @param prevNew previous new node
    * @return newly created copied node
    */
-  private Node<E> copyNode(final Node<E> source, final Node<E>[] headRef, final Node<E> prevNew) {
+  private Node<E> copyNode(final Node<E> source, final Node<E>[] headRef,
+      final Node<E> prevNew) {
     final Node<E> copied = new Node<>(source.getValue(), prevNew, null);
     if (prevNew == null) {
       headRef[0] = copied;
@@ -500,7 +516,8 @@ public final class PersistentDoublyLinkedList<E extends Comparable<E>>
    */
   private void checkIndex(final int index) {
     if (index < 0 || index >= size) {
-      throw new IndexOutOfBoundsException("index: " + index + ", size: " + size);
+      throw new IndexOutOfBoundsException(
+          "index: " + index + ", size: " + size);
     }
   }
 
