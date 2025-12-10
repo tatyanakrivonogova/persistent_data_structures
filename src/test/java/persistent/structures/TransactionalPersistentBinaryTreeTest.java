@@ -1,9 +1,25 @@
 package persistent.structures;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -11,7 +27,10 @@ import org.junit.jupiter.api.Test;
 
 /** Comprehensive tests for TransactionalPersistentBinaryTree. */
 class TransactionalPersistentBinaryTreeTest {
+
+  /** Empty tree for testing. */
   private TransactionalPersistentBinaryTree<Integer> emptyTree;
+  /** Tree with elements for testing. */
   private TransactionalPersistentBinaryTree<Integer> treeWithElements;
 
   @BeforeEach
@@ -102,7 +121,8 @@ class TransactionalPersistentBinaryTreeTest {
   @DisplayName("Transactional retainAll")
   void testTransactionalRetainAll() {
     List<Integer> toRetain = Arrays.asList(2, 3);
-    assertTrue(treeWithElements.retainAll(toRetain)); // Должны быть изменения (удалили 1)
+    // Должны быть изменения (удалили 1)
+    assertTrue(treeWithElements.retainAll(toRetain));
     assertEquals(2, treeWithElements.size());
     assertFalse(treeWithElements.contains(1));
     assertTrue(treeWithElements.contains(2));
@@ -140,7 +160,8 @@ class TransactionalPersistentBinaryTreeTest {
   @Test
   @DisplayName("Transactional copy")
   void testTransactionalCopy() {
-    TransactionalPersistentBinaryTree<Integer> copy = treeWithElements.transactionalCopy();
+    TransactionalPersistentBinaryTree<Integer> copy =
+        treeWithElements.transactionalCopy();
 
     // Initially they should be equal
     assertEquals(treeWithElements.size(), copy.size());
@@ -166,7 +187,8 @@ class TransactionalPersistentBinaryTreeTest {
   @Test
   @DisplayName("Tree-specific transactional methods")
   void testTreeSpecificTransactionalMethods() {
-    TransactionalPersistentBinaryTree<Integer> tree = new TransactionalPersistentBinaryTree<>();
+    TransactionalPersistentBinaryTree<Integer> tree =
+        new TransactionalPersistentBinaryTree<>();
 
     tree.add(50);
     tree.add(25);
@@ -232,7 +254,8 @@ class TransactionalPersistentBinaryTreeTest {
   @Test
   @DisplayName("Stress test with many operations")
   void testStressTest() {
-    TransactionalPersistentBinaryTree<Integer> tree = new TransactionalPersistentBinaryTree<>();
+    TransactionalPersistentBinaryTree<Integer> tree =
+        new TransactionalPersistentBinaryTree<>();
 
     // Add many elements
     for (int i = 0; i < 1000; i++) {
@@ -280,9 +303,8 @@ class TransactionalPersistentBinaryTreeTest {
     // Operations on empty tree should return false
     assertFalse(emptyTree.remove(Integer.valueOf(1)));
     assertFalse(emptyTree.removeAll(Arrays.asList(1, 2)));
-    assertFalse(
-        emptyTree.retainAll(
-            Arrays.asList(1, 2))); // retainAll на пустом дереве должен вернуть false
+    // retainAll на пустом дереве должен вернуть false
+    assertFalse(emptyTree.retainAll(Arrays.asList(1, 2)));
 
     // Tree-specific operations should throw
     assertThrows(NoSuchElementException.class, () -> emptyTree.min());
@@ -295,7 +317,8 @@ class TransactionalPersistentBinaryTreeTest {
 
   @Test
   @DisplayName("Concurrent snapshot consistency")
-  void testConcurrentSnapshotConsistency() throws InterruptedException, ExecutionException {
+  void testConcurrentSnapshotConsistency()
+      throws InterruptedException, ExecutionException {
     final TransactionalPersistentBinaryTree<Integer> tree =
         new TransactionalPersistentBinaryTree<>();
 
@@ -330,7 +353,8 @@ class TransactionalPersistentBinaryTreeTest {
       Integer prev = null;
       for (Integer element : snapshot) {
         if (prev != null) {
-          assertTrue(prev < element, "Elements not sorted: " + prev + " >= " + element);
+          assertTrue(prev < element,
+              "Elements not sorted: " + prev + " >= " + element);
         }
         prev = element;
       }
@@ -340,12 +364,14 @@ class TransactionalPersistentBinaryTreeTest {
   @Test
   @DisplayName("Tree maintains balance during transactional operations")
   void testBalanceDuringTransactions() {
-    TransactionalPersistentBinaryTree<Integer> tree = new TransactionalPersistentBinaryTree<>();
+    TransactionalPersistentBinaryTree<Integer> tree =
+        new TransactionalPersistentBinaryTree<>();
 
     // Insert in reverse order (worst case for BST)
     for (int i = 100; i >= 0; i--) {
       tree.add(i);
-      assertTrue(tree.isBalanced(), "Tree unbalanced after adding " + i);
+      assertTrue(tree.isBalanced(),
+          "Tree unbalanced after adding " + i);
     }
 
     // Remove in random order
@@ -357,7 +383,8 @@ class TransactionalPersistentBinaryTreeTest {
 
     for (Integer element : toRemove) {
       tree.remove(element);
-      assertTrue(tree.isBalanced(), "Tree unbalanced after removing " + element);
+      assertTrue(tree.isBalanced(),
+          "Tree unbalanced after removing " + element);
     }
 
     assertTrue(tree.isEmpty());

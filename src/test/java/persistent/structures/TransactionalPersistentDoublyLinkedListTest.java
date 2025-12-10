@@ -1,9 +1,25 @@
 package persistent.structures;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -12,7 +28,9 @@ import org.junit.jupiter.api.Test;
 /** Comprehensive tests for PersistentDoublyLinkedList. */
 class TransactionalListTest {
 
+  /** Empty list for testing. */
   private TransactionalPersistentDoublyLinkedList<Integer> emptyList;
+  /** List with elements for testing. */
   private TransactionalPersistentDoublyLinkedList<Integer> listWithElements;
 
   @BeforeEach
@@ -133,7 +151,8 @@ class TransactionalListTest {
   @Test
   @DisplayName("Transactional copy")
   void testTransactionalCopy() {
-    TransactionalPersistentDoublyLinkedList<Integer> copy = listWithElements.transactionalCopy();
+    TransactionalPersistentDoublyLinkedList<Integer> copy =
+        listWithElements.transactionalCopy();
 
     // Initially they should be equal
     assertEquals(listWithElements.size(), copy.size());
@@ -305,8 +324,8 @@ class TransactionalListTest {
     // Operations on empty list should return false
     assertFalse(emptyList.remove(Integer.valueOf(1)));
     assertFalse(emptyList.removeAll(Arrays.asList(1, 2)));
-    assertFalse(
-        emptyList.retainAll(Arrays.asList(1, 2))); // Пустой список retainAll должен вернуть false
+    // Пустой список retainAll должен вернуть false
+    assertFalse(emptyList.retainAll(Arrays.asList(1, 2)));
 
     // List-specific operations should throw
     assertThrows(NoSuchElementException.class, () -> emptyList.removeFirst());
@@ -317,7 +336,8 @@ class TransactionalListTest {
 
   @Test
   @DisplayName("Concurrent snapshot consistency")
-  void testConcurrentSnapshotConsistency() throws InterruptedException, ExecutionException {
+  void testConcurrentSnapshotConsistency()
+      throws InterruptedException, ExecutionException {
     final TransactionalPersistentDoublyLinkedList<Integer> list =
         new TransactionalPersistentDoublyLinkedList<>();
 

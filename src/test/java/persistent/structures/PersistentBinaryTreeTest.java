@@ -1,9 +1,21 @@
 package persistent.structures;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.NoSuchElementException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -14,8 +26,11 @@ import org.junit.jupiter.params.provider.ValueSource;
 @DisplayName("Persistent Binary Tree Tests")
 class PersistentBinaryTreeTest {
 
+  /** Empty tree for testing. */
   private PersistentBinaryTree<Integer> emptyTree;
+  /** Balanced tree for testing. */
   private PersistentBinaryTree<Integer> balancedTree;
+  /** Unbalanced tree for testing. */
   private PersistentBinaryTree<Integer> unbalancedTree;
 
   @BeforeEach
@@ -183,12 +198,12 @@ class PersistentBinaryTreeTest {
   void testImmutableOperations() {
     assertThrows(UnsupportedOperationException.class, () -> balancedTree.add(4));
     assertThrows(UnsupportedOperationException.class, () -> balancedTree.remove(2));
-    assertThrows(
-        UnsupportedOperationException.class, () -> balancedTree.addAll(Arrays.asList(4, 5)));
-    assertThrows(
-        UnsupportedOperationException.class, () -> balancedTree.removeAll(Arrays.asList(1, 2)));
-    assertThrows(
-        UnsupportedOperationException.class, () -> balancedTree.retainAll(Arrays.asList(1)));
+    assertThrows(UnsupportedOperationException.class,
+        () -> balancedTree.addAll(Arrays.asList(4, 5)));
+    assertThrows(UnsupportedOperationException.class,
+        () -> balancedTree.removeAll(Arrays.asList(1, 2)));
+    assertThrows(UnsupportedOperationException.class,
+        () -> balancedTree.retainAll(Arrays.asList(1)));
     assertThrows(UnsupportedOperationException.class, () -> balancedTree.clear());
   }
 
@@ -404,7 +419,7 @@ class PersistentBinaryTreeTest {
   @ParameterizedTest
   @ValueSource(ints = {0, 1, 5, 10, 100})
   @DisplayName("Add multiple elements and iterate in sorted order")
-  void testAddMultipleElements(int count) {
+  void testAddMultipleElements(final int count) {
     PersistentBinaryTree<Integer> tree = emptyTree;
     List<Integer> expected = new ArrayList<>();
 

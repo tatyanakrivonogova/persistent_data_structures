@@ -1,9 +1,20 @@
 package persistent.structures;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
+import java.util.NoSuchElementException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -11,11 +22,15 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 /**
- * Comprehensive tests for PersistentDoublyLinkedList and TransactionalPersistentDoublyLinkedList.
+ * Comprehensive tests for PersistentDoublyLinkedList and
+ * TransactionalPersistentDoublyLinkedList.
  */
 @DisplayName("Persistent Doubly Linked List Tests")
 class PersistentDoublyLinkedListTest {
+
+  /** Empty list for testing. */
   private PersistentDoublyLinkedList<Integer> emptyList;
+  /** List with elements for testing. */
   private PersistentDoublyLinkedList<Integer> listWithElements;
 
   @BeforeEach
@@ -158,9 +173,12 @@ class PersistentDoublyLinkedListTest {
     // Проверяем, что методы из Collection бросают исключения
     assertThrows(UnsupportedOperationException.class, () -> list.add(4));
     assertThrows(UnsupportedOperationException.class, () -> list.remove((Object) 2));
-    assertThrows(UnsupportedOperationException.class, () -> list.addAll(Arrays.asList(4, 5)));
-    assertThrows(UnsupportedOperationException.class, () -> list.removeAll(Arrays.asList(1, 2)));
-    assertThrows(UnsupportedOperationException.class, () -> list.retainAll(Arrays.asList(1)));
+    assertThrows(UnsupportedOperationException.class,
+        () -> list.addAll(Arrays.asList(4, 5)));
+    assertThrows(UnsupportedOperationException.class,
+        () -> list.removeAll(Arrays.asList(1, 2)));
+    assertThrows(UnsupportedOperationException.class,
+        () -> list.retainAll(Arrays.asList(1)));
     assertThrows(UnsupportedOperationException.class, () -> list.clear());
 
     // Проверяем, что итератор не поддерживает remove
@@ -270,8 +288,10 @@ class PersistentDoublyLinkedListTest {
   void testAddInvalidIndex() {
     assertThrows(IndexOutOfBoundsException.class, () -> emptyList.add(-1, 1));
     assertThrows(IndexOutOfBoundsException.class, () -> emptyList.add(1, 1));
-    assertThrows(IndexOutOfBoundsException.class, () -> listWithElements.add(-1, 1));
-    assertThrows(IndexOutOfBoundsException.class, () -> listWithElements.add(4, 1));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> listWithElements.add(-1, 1));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> listWithElements.add(4, 1));
   }
 
   @Test
@@ -279,8 +299,10 @@ class PersistentDoublyLinkedListTest {
   void testGetInvalidIndex() {
     assertThrows(IndexOutOfBoundsException.class, () -> emptyList.get(0));
     assertThrows(IndexOutOfBoundsException.class, () -> emptyList.get(-1));
-    assertThrows(IndexOutOfBoundsException.class, () -> listWithElements.get(-1));
-    assertThrows(IndexOutOfBoundsException.class, () -> listWithElements.get(3));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> listWithElements.get(-1));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> listWithElements.get(3));
   }
 
   @Test
@@ -288,8 +310,10 @@ class PersistentDoublyLinkedListTest {
   void testRemoveInvalidIndex() {
     assertThrows(IndexOutOfBoundsException.class, () -> emptyList.remove(0));
     assertThrows(IndexOutOfBoundsException.class, () -> emptyList.remove(-1));
-    assertThrows(IndexOutOfBoundsException.class, () -> listWithElements.remove(-1));
-    assertThrows(IndexOutOfBoundsException.class, () -> listWithElements.remove(3));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> listWithElements.remove(-1));
+    assertThrows(IndexOutOfBoundsException.class,
+        () -> listWithElements.remove(3));
   }
 
   @Test
@@ -307,7 +331,8 @@ class PersistentDoublyLinkedListTest {
 
     PersistentDoublyLinkedList<String> stringList =
         (PersistentDoublyLinkedList<String>)
-            new PersistentDoublyLinkedList<String>().createWithAdded("a").createWithAdded("b");
+            new PersistentDoublyLinkedList<String>().createWithAdded("a")
+                .createWithAdded("b");
     assertEquals("[a, b]", stringList.toString());
   }
 
@@ -368,7 +393,7 @@ class PersistentDoublyLinkedListTest {
   @ParameterizedTest
   @ValueSource(ints = {0, 1, 5, 10, 100})
   @DisplayName("Add multiple elements and iterate")
-  void testAddMultipleElements(int count) {
+  void testAddMultipleElements(final int count) {
     PersistentDoublyLinkedList<Integer> list = emptyList;
     List<Integer> expected = new ArrayList<>();
 
