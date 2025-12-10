@@ -67,7 +67,8 @@ class PersistentDoublyLinkedListTest {
   @Test
   @DisplayName("Remove elements from list")
   void testRemoveElements() {
-    PersistentDoublyLinkedList<Integer> list = (PersistentDoublyLinkedList<Integer>)
+    PersistentDoublyLinkedList<Integer> list =
+        (PersistentDoublyLinkedList<Integer>)
         listWithElements.createWithRemoved(2);
     assertEquals(2, list.size());
     assertTrue(list.containsElement(1));
