@@ -1,624 +1,677 @@
 package persistent.structures;
 
-import persistent.core.AbstractPersistentStructure;
-import persistent.core.Version;
-import persistent.core.TransactionalVersion;
-
+import java.util.AbstractMap;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.ArrayList;
-import java.util.Objects;
 import java.util.Map;
-import java.util.AbstractMap;
+import java.util.NoSuchElementException;
+import java.util.Objects;
+import persistent.core.PersistentStructure;
+import persistent.core.SimpleVersion;
+import persistent.core.Version;
 
 /**
- * A persistent associative array based on AVL tree with transaction support.
+ * Persistent tree map that fully implements Collection interface. Uses wrapper
+ * pattern for transactional updates.
  *
- * @param <K> the type of keys maintained by this map, must be Comparable
- * @param <V> the type of mapped values
- * @version 3.0
+ * @param <K> the type of keys, must be Comparable
+ * @param <V> the type of values
  */
-public class PersistentTreeMap<K extends Comparable<K>, V>
-    extends AbstractPersistentStructure<Map.Entry<K, V>> {
+public final class PersistentTreeMap<K extends Comparable<K>, V>
+    implements PersistentStructure<Map.Entry<K, V>> {
+
+  /**
+    * Immutable tree node.
+    * @param <K> the type of keys, must implement Comparable<K>
+    * @param <V> the type of mapped values
+    */
+  private static final class TreeNode<K extends Comparable<K>, V> {
+    /** The key stored in this node. */
+    private final K key;
+    /** The value stored in this node. */
+    private final V value;
+    /** The left child node. */
+    private final TreeNode<K, V> left;
+    /** The right child node. */
+    private final TreeNode<K, V> right;
+    /** The height of this node. */
+    private final int height;
+    /** The size of the subtree rooted at this node. */
+    private final int size;
 
     /**
-     * A node for binary tree implementations of persistent structures.
-     * This class represents a node in a balanced binary search tree with
-     * height information for maintaining tree balance.
+     * Constructs a new tree node.
      *
-     * @param <K> the type of keys maintained by this tree node,
-     * must be Comparable
-     * @param <V> the type of mapped values
-     * @version 1.0
+     * @param nodeKey the key
+     * @param nodeValue the value
+     * @param leftChild the left child
+     * @param rightChild the right child
      */
-    private static class TreeNode<K extends Comparable<K>, V> {
-        /**
-         * The key of this tree node.
-         */
-        private final K key;
-
-        /**
-         * The value associated with the key.
-         */
-        private final V value;
-
-        /**
-         * The left child of this node.
-         */
-        private final TreeNode<K, V> left;
-
-        /**
-         * The right child of this node.
-         */
-        private final TreeNode<K, V> right;
-
-        /**
-         * The height of the subtree rooted at this node.
-         */
-        private final int height;
-
-        /**
-         * Constructs a new tree node with the specified
-         * key, value, and children.
-         * The height is automatically calculated based
-         * on the children's heights.
-         *
-         * @param keyValue the key for this node
-         * @param valueValue the value for this node
-         * @param leftValue the left child node
-         * @param rightValue the right child node
-         */
-        TreeNode(final K keyValue, final V valueValue,
-            final TreeNode<K, V> leftValue, final TreeNode<K, V> rightValue) {
-            this.key = keyValue;
-            this.value = valueValue;
-            this.left = leftValue;
-            this.right = rightValue;
-            this.height = 1 + Math.max(height(leftValue), height(rightValue));
-        }
-
-        /**
-         * Returns the key of this tree node.
-         *
-         * @return the key of this node
-         */
-        public K getKey() {
-            return key;
-        }
-
-        /**
-         * Returns the value associated with this tree node.
-         *
-         * @return the value of this node
-         */
-        public V getValue() {
-            return value;
-        }
-
-        /**
-         * Returns the left child of this tree node.
-         *
-         * @return the left child node, or null if no left child exists
-         */
-        public TreeNode<K, V> getLeft() {
-            return left;
-        }
-
-        /**
-         * Returns the right child of this tree node.
-         *
-         * @return the right child node, or null if no right child exists
-         */
-        public TreeNode<K, V> getRight() {
-            return right;
-        }
-
-        /**
-         * Returns the height of the subtree rooted at this node.
-         *
-         * @return the height of this node
-         */
-        public int getHeight() {
-            return height;
-        }
-
-        /**
-         * Calculates the height of the given tree node.
-         *
-         * @param node the node to calculate height for, may be null
-         * @return the height of the node, or 0 if the node is null
-         */
-        private static int height(final TreeNode<?, ?> node) {
-            return node == null ? 0 : node.getHeight();
-        }
+    TreeNode(final K nodeKey, final V nodeValue,
+        final TreeNode<K, V> leftChild, final TreeNode<K, V> rightChild) {
+      this.key = nodeKey;
+      this.value = nodeValue;
+      this.left = leftChild;
+      this.right = rightChild;
+      this.height = 1 + Math.max(height(leftChild), height(rightChild));
+      this.size = 1 + size(leftChild) + size(rightChild);
     }
 
     /**
-     * The root node of the tree.
-     */
-    private TreeNode<K, V> root;
-
-    /**
-     * The number of elements in the binary tree.
-     */
-    private int size;
-
-    /**
-     * Constructs an empty persistent tree map.
-     */
-    public PersistentTreeMap() {
-        super();
-        this.root = null;
-        this.size = 0;
-    }
-
-    /**
-     * Private constructor for creating new versions of the map.
-     * Creates a new persistent tree map instance with specified root
-     * node, size, and version.
-     * Used internally for creating modified versions while
-     * maintaining immutability.
+     * Returns the height of a node, or 0 if null.
      *
-     * @param rootValue     the root node of the tree,
-     * can be null for empty map
-     * @param sizeValue     the number of key-value pairs in the map
-     * @param versionValue  the version identifier for this map instance
+     * @param <K> the type of keys
+     * @param <V> the type of values
+     * @param node the node to check
+     * @return the height of the node
      */
-    private PersistentTreeMap(final TreeNode<K, V> rootValue,
-        final int sizeValue, final Version versionValue) {
-        super(versionValue);
-        this.root = rootValue;
-        this.size = sizeValue;
+    static <K extends Comparable<K>, V> int height(
+        final TreeNode<K, V> node) {
+      return node == null ? 0 : node.height;
     }
 
     /**
-     * Creates a deep copy of the current map.
-     * Creates a new persistent tree map instance that shares the structure
-     * but has independent version tracking. Used internally for creating
-     * new versions while preserving immutability.
+     * Returns the size of a node's subtree, or 0 if null.
      *
-     * @return a new PersistentTreeMap instance with the same
-     * structure and size but separate version identity
+     * @param <K> the type of keys
+     * @param <V> the type of values
+     * @param node the node to check
+     * @return the size of the subtree
      */
-    private PersistentTreeMap<K, V> deepCopy() {
-        return new PersistentTreeMap<>(this.root, this.size, this.getVersion());
+    static <K extends Comparable<K>, V> int size(
+        final TreeNode<K, V> node) {
+      return node == null ? 0 : node.size;
     }
 
     /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected void savePreTransactionState() {
-        this.setPreTransactionState(this.deepCopy());
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected void restoreFromPreTransactionState() {
-        if (this.getPreTransactionState() instanceof PersistentTreeMap) {
-            PersistentTreeMap<K, V> savedState =
-                (PersistentTreeMap<K, V>) this.getPreTransactionState();
-            this.root = savedState.root;
-            this.size = savedState.size;
-            this.setVersion(savedState.getVersion());
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected void convertToFinalVersion() {
-        // Convert transactional version to final version
-        Version current = getVersion();
-        if (current instanceof TransactionalVersion) {
-            TransactionalVersion tv = (TransactionalVersion) current;
-            if (tv.isTransactional()) {
-                setVersion(new TransactionalVersion(tv.getId(), null,
-                    false, 0));
-            }
-        }
-    }
-
-    /**
-     * Associates the specified value with the specified key in this map.
-     * Transaction-aware: in transaction, modifications are isolated.
+     * Returns the balance factor of this node.
      *
-     * @param key the key with which the specified value is to be associated
-     * @param value the value to be associated with the specified key
-     * @return a new persistent map containing the specified key-value mapping
+     * @return height(left) - height(right)
      */
-    public PersistentTreeMap<K, V> put(final K key, final V value) {
-        TreeNode<K, V> newRoot = put(root, key, value);
-        boolean keyExists = get(root, key) != null;
+    int balanceFactor() {
+      return height(left) - height(right);
+    }
+  }
 
-        Version newVersion = createNewVersion();
-        PersistentTreeMap<K, V> result = new PersistentTreeMap<>(
-            newRoot,
-            keyExists ? size : size + 1,
-            newVersion
-        );
+  /** The root node of this tree map. */
+  private final TreeNode<K, V> root;
 
-        // If in transaction, update current instance
-        if (isInTransaction()) {
-            this.root = result.root;
-            this.size = result.size;
-            this.setVersion(newVersion);
-            return this;
-        }
+  /** Public constructor for empty map. */
+  public PersistentTreeMap() {
+    this.root = null;
+  }
 
-        return result;
+  /**
+   * Private constructor for internal use.
+   * @param newRoot new root node
+   */
+  private PersistentTreeMap(final TreeNode<K, V> newRoot) {
+    this.root = newRoot;
+  }
+
+  // ========== PersistentStructure interface implementations ==========
+
+  @Override
+  public PersistentStructure<Map.Entry<K, V>> createWithAdded(
+      final Map.Entry<K, V> entry) {
+    if (entry == null || entry.getKey() == null) {
+      return this; // Don't add null entries or null keys
+    }
+    return put(entry.getKey(), entry.getValue());
+  }
+
+  @Override
+  public PersistentStructure<Map.Entry<K, V>> createWithRemoved(
+      final Map.Entry<K, V> entry) {
+    if (entry == null || entry.getKey() == null) {
+      return this; // Can't remove null
+    }
+    return remove(entry.getKey());
+  }
+
+  @Override
+  public PersistentStructure<Map.Entry<K, V>> createEmpty() {
+    return new PersistentTreeMap<>(null);
+  }
+
+  @Override
+  public boolean containsElement(final Map.Entry<K, V> entry) {
+    if (entry == null || entry.getKey() == null) {
+      return false;
+    }
+    V value = get(entry.getKey());
+    return value != null && value.equals(entry.getValue());
+  }
+
+  // ========== Map-specific operations ==========
+
+  /**
+   * Associates the specified value with the specified key.
+   *
+   * @param key the key
+   * @param value the value
+   * @return new map version with the key-value pair added or updated
+   */
+  public PersistentTreeMap<K, V> put(final K key, final V value) {
+    TreeNode<K, V> newRoot = put(root, key, value);
+    if (newRoot == root && get(key) != null
+        && Objects.equals(get(key), value)) {
+      return this; // No change
+    }
+    return new PersistentTreeMap<>(newRoot);
+  }
+
+  /**
+   * Removes the mapping for the specified key.
+   *
+   * @param key the key to remove
+   * @return new map version with the key removed
+   */
+  public PersistentTreeMap<K, V> remove(final K key) {
+    if (!containsKey(key)) {
+      return this;
+    }
+    TreeNode<K, V> newRoot = delete(root, key);
+    return new PersistentTreeMap<>(newRoot == null ? null : newRoot);
+  }
+
+  /**
+   * Returns the value to which the specified key is mapped.
+   *
+   * @param key the key
+   * @return the value associated with the key, or null if not found
+   */
+  public V get(final K key) {
+    if (key == null) {
+      return null;
+    }
+    TreeNode<K, V> node = get(root, key);
+    return node == null ? null : node.value;
+  }
+
+  /**
+   * Returns true if this map contains the specified key.
+   *
+   * @param key the key
+   * @return true if the map contains the key
+   */
+  public boolean containsKey(final K key) {
+    return get(key) != null;
+  }
+
+  /**
+   * Returns true if this map contains the specified value.
+   *
+   * @param value the value
+   * @return true if the map contains the value
+   */
+  public boolean containsValue(final V value) {
+    return containsValue(root, value);
+  }
+
+  /**
+   * Returns the first (lowest) key.
+   *
+   * @return the first key
+   * @throws NoSuchElementException if the map is empty
+   */
+  public K firstKey() {
+    if (root == null) {
+      throw new NoSuchElementException("Map is empty");
+    }
+    return findMin(root).key;
+  }
+
+  /**
+   * Returns the last (highest) key.
+   *
+   * @return the last key
+   * @throws NoSuchElementException if the map is empty
+   */
+  public K lastKey() {
+    if (root == null) {
+      throw new NoSuchElementException("Map is empty");
+    }
+    return findMax(root).key;
+  }
+
+  // ========== Collection interface methods ==========
+
+  @Override
+  public boolean add(final Map.Entry<K, V> entry) {
+    throw new UnsupportedOperationException(
+        "PersistentTreeMap is immutable. Use "
+            + "TransactionalPersistentTreeMap wrapper for mutable operations.");
+  }
+
+  @Override
+  public boolean remove(final Object o) {
+    throw new UnsupportedOperationException(
+        "PersistentTreeMap is immutable. Use "
+            + "TransactionalPersistentTreeMap wrapper for mutable operations.");
+  }
+
+  @Override
+  public boolean contains(final Object o) {
+    if (o == null) {
+      return false;
+    }
+    try {
+      @SuppressWarnings("unchecked")
+      Map.Entry<K, V> entry = (Map.Entry<K, V>) o;
+      return containsElement(entry);
+    } catch (ClassCastException e) {
+      return false;
+    }
+  }
+
+  @Override
+  public int size() {
+    return TreeNode.size(root);
+  }
+
+  @Override
+  public boolean isEmpty() {
+    return size() == 0;
+  }
+
+  @Override
+  public Iterator<Map.Entry<K, V>> iterator() {
+    return new MapIterator();
+  }
+
+  @Override
+  public Object[] toArray() {
+    Object[] array = new Object[size()];
+    int i = 0;
+    for (Map.Entry<K, V> entry : this) {
+      array[i++] = entry;
+    }
+    return array;
+  }
+
+  @Override
+  @SuppressWarnings("unchecked")
+  public <E> E[] toArray(final E[] a) {
+    E[] result = a;
+    int size = size();
+    if (result.length < size) {
+      result = (E[]) java.lang.reflect.Array.newInstance(
+          a.getClass().getComponentType(), size);
     }
 
-    /**
-     * Removes the mapping for the specified key from this map if present.
-     * Transaction-aware: in transaction, modifications are isolated.
-     *
-     * @param key the key whose mapping is to be removed from the map
-     * @return a new persistent map without the specified key mapping
-     */
-    public PersistentTreeMap<K, V> remove(final K key) {
-        if (!containsKey(key)) {
-            return this; // Key not found - return same instance
-        }
-
-        TreeNode<K, V> newRoot = remove(root, key);
-        Version newVersion = createNewVersion();
-        PersistentTreeMap<K, V> result = new PersistentTreeMap<>(
-            newRoot,
-            size - 1,
-            newVersion
-        );
-
-        // If in transaction, update current instance
-        if (isInTransaction()) {
-            this.root = result.root;
-            this.size = result.size;
-            this.setVersion(newVersion);
-            return this;
-        }
-
-        return result;
+    int i = 0;
+    for (Map.Entry<K, V> entry : this) {
+      result[i++] = (E) entry;
     }
 
-    /**
-     * Returns the value to which the specified key is mapped,
-     * or null if no mapping exists.
-     *
-     * @param key the key whose associated value is to be returned
-     * @return the value to which the specified key is mapped,
-     * or null if not present
-     */
-    public V get(final K key) {
-        TreeNode<K, V> node = get(root, key);
-        return node == null ? null : node.getValue();
+    if (result.length > size) {
+      result[size] = null;
     }
 
-    /**
-     * Returns true if this map contains a mapping for the specified key.
-     *
-     * @param key the key whose presence in this map is to be tested
-     * @return true if this map contains a mapping for the specified key
-     */
-    public boolean containsKey(final K key) {
-        return get(key) != null;
+    return result;
+  }
+
+  @Override
+  public boolean containsAll(final Collection<?> c) {
+    for (Object element : c) {
+      if (!contains(element)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  @Override
+  public boolean addAll(final Collection<? extends Map.Entry<K, V>> c) {
+    throw new UnsupportedOperationException(
+        "PersistentTreeMap is immutable. Use "
+            + "TransactionalPersistentTreeMap wrapper for mutable operations.");
+  }
+
+  @Override
+  public boolean removeAll(final Collection<?> c) {
+    throw new UnsupportedOperationException(
+        "PersistentTreeMap is immutable. Use "
+            + "TransactionalPersistentTreeMap wrapper for mutable operations.");
+  }
+
+  @Override
+  public boolean retainAll(final Collection<?> c) {
+    throw new UnsupportedOperationException(
+        "PersistentTreeMap is immutable. Use "
+            + "TransactionalPersistentTreeMap wrapper for mutable operations.");
+  }
+
+  @Override
+  public void clear() {
+    throw new UnsupportedOperationException(
+        "PersistentTreeMap is immutable. Use "
+            + "TransactionalPersistentTreeMap wrapper for mutable operations.");
+  }
+
+  @Override
+  public Version getVersion() {
+    return new SimpleVersion();
+  }
+
+  @Override
+  public PersistentStructure<Map.Entry<K, V>> snapshot() {
+    return this; // Already immutable
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (!(o instanceof Collection)) {
+      return false;
     }
 
-    /**
-     * Returns true if this map contains the specified value.
-     *
-     * @param value the value whose presence in this map is to be tested
-     * @return true if this map contains the specified value
-     */
-    public boolean containsValue(final V value) {
-        return containsValue(root, value);
+    Collection<?> that = (Collection<?>) o;
+    if (size() != that.size()) {
+      return false;
     }
 
-    /**
-     * Returns the first (lowest) key currently in this map.
-     *
-     * @return the first key in this map
-     * @throws NoSuchElementException if this map is empty
-     */
-    public K firstKey() {
-        if (root == null) {
-            throw new NoSuchElementException("Map is empty");
-        }
-        return findMin(root).getKey();
+    Iterator<Map.Entry<K, V>> it1 = iterator();
+    Iterator<?> it2 = that.iterator();
+
+    while (it1.hasNext() && it2.hasNext()) {
+      if (!Objects.equals(it1.next(), it2.next())) {
+        return false;
+      }
     }
 
-    /**
-     * Returns the last (highest) key currently in this map.
-     *
-     * @return the last key in this map
-     * @throws NoSuchElementException if this map is empty
-     */
-    public K lastKey() {
-        if (root == null) {
-            throw new NoSuchElementException("Map is empty");
-        }
-        return findMax(root).getKey();
+    return !it1.hasNext() && !it2.hasNext();
+  }
+
+  @Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = 1;
+    for (Map.Entry<K, V> entry : this) {
+      result = prime * result + (entry == null ? 0 : entry.hashCode());
+    }
+    return result;
+  }
+
+  @Override
+  public String toString() {
+    Iterator<Map.Entry<K, V>> it = iterator();
+    if (!it.hasNext()) {
+      return "{}";
     }
 
-    /**
-     * Returns the height of the underlying tree.
-     *
-     * @return the height of the tree
-     */
-    public int height() {
-        return root == null ? 0 : root.getHeight();
+    StringBuilder sb = new StringBuilder();
+    sb.append('{');
+    for (;;) {
+      Map.Entry<K, V> e = it.next();
+      sb.append(e.getKey()).append('=').append(e.getValue());
+      if (!it.hasNext()) {
+        return sb.append('}').toString();
+      }
+      sb.append(',').append(' ');
+    }
+  }
+
+  // ========== Tree operations ==========
+
+  private TreeNode<K, V> get(final TreeNode<K, V> node, final K key) {
+    if (key == null || node == null) {
+      return null;
     }
 
-    /**
-     * Returns true if the underlying tree is balanced.
-     *
-     * @return true if the tree is balanced
-     */
-    public boolean isBalanced() {
-        return isBalanced(root);
+    int cmp = key.compareTo(node.key);
+    if (cmp < 0) {
+      return get(node.left, key);
+    } else if (cmp > 0) {
+      return get(node.right, key);
+    } else {
+      return node;
+    }
+  }
+
+  private TreeNode<K, V> put(final TreeNode<K, V> node, final K key,
+      final V value) {
+    if (key == null) {
+      return node; // Don't insert null key
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int size() {
-        return size;
+    if (node == null) {
+      return new TreeNode<>(key, value, null, null);
     }
 
-    /**
-     * {@inheritDoc}
-     * Returns an iterator over entries in key-sorted order.
-     */
-    @Override
-    public Iterator<Map.Entry<K, V>> iterator() {
-        return inOrderTraversal().iterator();
+    int cmp = key.compareTo(node.key);
+    if (cmp < 0) {
+      TreeNode<K, V> newLeft = put(node.left, key, value);
+      if (newLeft == node.left) {
+        // Check if we're updating existing key with same value
+        TreeNode<K, V> existingLeft = get(node, key);
+        if (existingLeft != null
+          && Objects.equals(existingLeft.value, value)) {
+          return node; // No change
+        }
+      }
+      return balance(new TreeNode<>(node.key, node.value,
+          newLeft, node.right));
+    } else if (cmp > 0) {
+      TreeNode<K, V> newRight = put(node.right, key, value);
+      if (newRight == node.right) {
+        // Check if we're updating existing key with same value
+        TreeNode<K, V> existingRight = get(node, key);
+        if (existingRight != null
+          && Objects.equals(existingRight.value, value)) {
+          return node; // No change
+        }
+      }
+      return balance(new TreeNode<>(node.key, node.value,
+          node.left, newRight));
+    } else {
+      // Update existing key
+      if (Objects.equals(node.value, value)) {
+        return node; // Same value, no change
+      }
+      return new TreeNode<>(key, value, node.left, node.right);
+    }
+  }
+
+  private TreeNode<K, V> delete(final TreeNode<K, V> node, final K key) {
+    if (key == null || node == null) {
+      return node;
     }
 
-    private TreeNode<K, V> put(final TreeNode<K, V> node,
-        final K key, final V value) {
-        if (node == null) {
-            return new TreeNode<>(key, value, null, null);
-        }
-
-        int cmp = key.compareTo(node.getKey());
-        if (cmp < 0) {
-            TreeNode<K, V> newLeft = put(node.getLeft(), key, value);
-            return balance(new TreeNode<>(
-                node.getKey(), node.getValue(),
-                newLeft,
-                node.getRight()
-            ));
-        } else if (cmp > 0) {
-            TreeNode<K, V> newRight = put(node.getRight(), key, value);
-            return balance(new TreeNode<>(
-                node.getKey(), node.getValue(),
-                node.getLeft(),
-                newRight
-            ));
-        } else {
-            // Update existing key
-            return new TreeNode<>(key, value, node.getLeft(), node.getRight());
-        }
-    }
-
-    private TreeNode<K, V> remove(final TreeNode<K, V> node, final K key) {
-        if (node == null) {
-            return null;
-        }
-
-        int cmp = key.compareTo(node.getKey());
-        if (cmp < 0) {
-            TreeNode<K, V> newLeft = remove(node.getLeft(), key);
-            return balance(new TreeNode<>(
-                node.getKey(), node.getValue(),
-                newLeft,
-                node.getRight()
-            ));
-        } else if (cmp > 0) {
-            TreeNode<K, V> newRight = remove(node.getRight(), key);
-            return balance(new TreeNode<>(
-                node.getKey(), node.getValue(),
-                node.getLeft(),
-                newRight
-            ));
-        } else {
-            // Node to be removed found
-            if (node.getLeft() == null) {
-                return node.getRight();
-            }
-            if (node.getRight() == null) {
-                return node.getLeft();
-            }
-
-            // Node with two children
-            TreeNode<K, V> minNode = findMin(node.getRight());
-            return balance(new TreeNode<>(
-                minNode.getKey(), minNode.getValue(),
-                node.getLeft(),
-                removeMin(node.getRight())
-            ));
-        }
-    }
-
-    private TreeNode<K, V> get(final TreeNode<K, V> node, final K key) {
-        if (node == null) {
-            return null;
-        }
-
-        int cmp = key.compareTo(node.getKey());
-        if (cmp < 0) {
-            return get(node.getLeft(), key);
-        } else if (cmp > 0) {
-            return get(node.getRight(), key);
-        } else {
-            return node;
-        }
-    }
-
-    private boolean containsValue(final TreeNode<K, V> node, final V value) {
-        if (node == null) {
-            return false;
-        }
-
-        if (Objects.equals(value, node.getValue())) {
-            return true;
-        }
-
-        return containsValue(node.getLeft(), value)
-            || containsValue(node.getRight(), value);
-    }
-
-    private TreeNode<K, V> findMin(final TreeNode<K, V> node) {
-        TreeNode<K, V> current = node;
-        while (current.getLeft() != null) {
-            current = current.getLeft();
-        }
-        return current;
-    }
-
-    private TreeNode<K, V> findMax(final TreeNode<K, V> node) {
-        TreeNode<K, V> current = node;
-        while (current.getRight() != null) {
-            current = current.getRight();
-        }
-        return current;
-    }
-
-    private TreeNode<K, V> removeMin(final TreeNode<K, V> node) {
-        if (node.getLeft() == null) {
-            return node.getRight();
-        }
-        TreeNode<K, V> newLeft = removeMin(node.getLeft());
-        return balance(new TreeNode<>(
-            node.getKey(), node.getValue(),
-            newLeft,
-            node.getRight()
-        ));
-    }
-
-    private TreeNode<K, V> balance(final TreeNode<K, V> node) {
-        if (node == null) {
-            return null;
-        }
-
-        int balanceFactor = getBalanceFactor(node);
-
-        // Left heavy
-        if (balanceFactor > 1) {
-            if (getBalanceFactor(node.getLeft()) < 0) {
-                // Left-Right case
-                return rotateRight(new TreeNode<>(
-                    node.getKey(), node.getValue(),
-                    rotateLeft(node.getLeft()),
-                    node.getRight()
-                ));
-            }
-            // Left-Left case
-            return rotateRight(node);
-        }
-
-        // Right heavy
-        if (balanceFactor < -1) {
-            if (getBalanceFactor(node.getRight()) > 0) {
-                // Right-Left case
-                return rotateLeft(new TreeNode<>(
-                    node.getKey(), node.getValue(),
-                    node.getLeft(),
-                    rotateRight(node.getRight())
-                ));
-            }
-            // Right-Right case
-            return rotateLeft(node);
-        }
-
+    int cmp = key.compareTo(node.key);
+    if (cmp < 0) {
+      TreeNode<K, V> newLeft = delete(node.left, key);
+      if (newLeft == node.left) {
         return node;
+      }
+      return balance(new TreeNode<>(node.key, node.value,
+          newLeft, node.right));
+    } else if (cmp > 0) {
+      TreeNode<K, V> newRight = delete(node.right, key);
+      if (newRight == node.right) {
+        return node;
+      }
+      return balance(new TreeNode<>(node.key, node.value,
+          node.left, newRight));
+    } else {
+      // Node to delete found
+      if (node.left == null) {
+        return node.right;
+      }
+      if (node.right == null) {
+        return node.left;
+      }
+
+      // Node with two children
+      TreeNode<K, V> minNode = findMin(node.right);
+      TreeNode<K, V> newRight = deleteMin(node.right);
+      return balance(new TreeNode<>(minNode.key, minNode.value,
+          node.left, newRight));
+    }
+  }
+
+  private boolean containsValue(final TreeNode<K, V> node, final V value) {
+    if (node == null) {
+      return false;
     }
 
-    private int getBalanceFactor(final TreeNode<K, V> node) {
-        if (node == null) {
-            return 0;
-        }
-        return height(node.getLeft()) - height(node.getRight());
+    if (Objects.equals(value, node.value)) {
+      return true;
     }
 
-    private int height(final TreeNode<K, V> node) {
-        return node == null ? 0 : node.getHeight();
+    return containsValue(node.left, value)
+        || containsValue(node.right, value);
+  }
+
+  private TreeNode<K, V> balance(final TreeNode<K, V> node) {
+    if (node == null) {
+      return null;
     }
 
-    private TreeNode<K, V> rotateRight(final TreeNode<K, V> y) {
-        TreeNode<K, V> x = y.getLeft();
-        TreeNode<K, V> t2 = x.getRight();
+    int balanceFactor = node.balanceFactor();
 
-        return new TreeNode<>(
-            x.getKey(), x.getValue(),
-            x.getLeft(),
-            new TreeNode<>(y.getKey(), y.getValue(), t2, y.getRight())
-        );
+    if (balanceFactor > 1) {
+      if (node.left.balanceFactor() < 0) {
+        // Left-Right case
+        return rotateRight(new TreeNode<>(node.key, node.value,
+            rotateLeft(node.left), node.right));
+      }
+      // Left-Left case
+      return rotateRight(node);
     }
 
-    private TreeNode<K, V> rotateLeft(final TreeNode<K, V> x) {
-        TreeNode<K, V> y = x.getRight();
-        TreeNode<K, V> t2 = y.getLeft();
-
-        return new TreeNode<>(
-            y.getKey(), y.getValue(),
-            new TreeNode<>(x.getKey(), x.getValue(), x.getLeft(), t2),
-            y.getRight()
-        );
+    if (balanceFactor < -1) {
+      if (node.right.balanceFactor() > 0) {
+        // Right-Left case
+        return rotateLeft(new TreeNode<>(node.key, node.value,
+            node.left, rotateRight(node.right)));
+      }
+      // Right-Right case
+      return rotateLeft(node);
     }
 
-    private boolean isBalanced(final TreeNode<K, V> node) {
-        if (node == null) {
-            return true;
-        }
+    return node;
+  }
 
-        int balanceFactor = getBalanceFactor(node);
-        if (Math.abs(balanceFactor) > 1) {
-            return false;
-        }
+  private TreeNode<K, V> rotateRight(final TreeNode<K, V> y) {
+    TreeNode<K, V> x = y.left;
+    TreeNode<K, V> t2 = x.right;
 
-        return isBalanced(node.getLeft()) && isBalanced(node.getRight());
+    return new TreeNode<>(x.key, x.value, x.left,
+        new TreeNode<>(y.key, y.value, t2, y.right));
+  }
+
+  private TreeNode<K, V> rotateLeft(final TreeNode<K, V> x) {
+    TreeNode<K, V> y = x.right;
+    TreeNode<K, V> t2 = y.left;
+
+    return new TreeNode<>(y.key, y.value,
+        new TreeNode<>(x.key, x.value, x.left, t2), y.right);
+  }
+
+  private TreeNode<K, V> findMin(final TreeNode<K, V> node) {
+    TreeNode<K, V> currentNode = node;
+    while (currentNode.left != null) {
+      currentNode = currentNode.left;
+    }
+    return currentNode;
+  }
+
+  private TreeNode<K, V> findMax(final TreeNode<K, V> node) {
+    TreeNode<K, V> currentNode = node;
+    while (currentNode.right != null) {
+      currentNode = currentNode.right;
+    }
+    return currentNode;
+  }
+
+  private TreeNode<K, V> deleteMin(final TreeNode<K, V> node) {
+    if (node.left == null) {
+      return node.right;
+    }
+    return balance(new TreeNode<>(node.key, node.value,
+        deleteMin(node.left), node.right));
+  }
+
+  private boolean isBalanced(final TreeNode<K, V> node) {
+    if (node == null) {
+      return true;
     }
 
-    private List<Map.Entry<K, V>> inOrderTraversal() {
-        List<Map.Entry<K, V>> result = new ArrayList<>();
-        inOrderTraversal(root, result);
-        return result;
+    int balanceFactor = node.balanceFactor();
+    if (Math.abs(balanceFactor) > 1) {
+      return false;
     }
 
-    private void inOrderTraversal(final TreeNode<K, V> node,
-        final List<Map.Entry<K, V>> result) {
-        if (node != null) {
-            inOrderTraversal(node.getLeft(), result);
-            result.add(new AbstractMap.SimpleEntry<>(
-                node.getKey(), node.getValue()));
-            inOrderTraversal(node.getRight(), result);
-        }
-    }
+    return isBalanced(node.left) && isBalanced(node.right);
+  }
 
-    /**
-     * Returns a snapshot of the current map state.
-     * Useful for getting a consistent view during transactions.
-     * Creates an independent copy of the map that won't be affected
-     * by subsequent modifications to the original.
-     *
-     * @return a new PersistentTreeMap instance representing
-     * the current state as an immutable snapshot
-     */
-    public PersistentTreeMap<K, V> snapshot() {
-        return this.deepCopy();
+  // ========== Iterator ==========
+
+  private final class MapIterator implements Iterator<Map.Entry<K, V>> {
+    /** The entries in order. */
+    private final List<Map.Entry<K, V>> entries;
+    /** The current index in the iteration. */
+    private int currentIndex;
+
+    /** Creates a new iterator. */
+    MapIterator() {
+      this.entries = new ArrayList<>();
+      inOrderTraversal(root, entries);
+      this.currentIndex = 0;
     }
 
     @Override
-    public final String toString() {
-        List<String> entries = new ArrayList<>();
-        for (Map.Entry<K, V> entry : this) {
-            entries.add(entry.getKey() + "=" + entry.getValue());
-        }
-        return "PersistentTreeMap{" + String.join(", ", entries) + "}";
+    public boolean hasNext() {
+      return currentIndex < entries.size();
     }
+
+    @Override
+    public Map.Entry<K, V> next() {
+      if (!hasNext()) {
+        throw new NoSuchElementException();
+      }
+      return entries.get(currentIndex++);
+    }
+
+    @Override
+    public void remove() {
+      throw new UnsupportedOperationException(
+          "Persistent structures are immutable");
+    }
+  }
+
+  private void inOrderTraversal(final TreeNode<K, V> node,
+      final List<Map.Entry<K, V>> result) {
+    if (node != null) {
+      inOrderTraversal(node.left, result);
+      result.add(new AbstractMap.SimpleEntry<>(node.key, node.value));
+      inOrderTraversal(node.right, result);
+    }
+  }
+
+  // ========== Utility methods ==========
+
+  /**
+   * Returns the height of this tree map.
+   *
+   * @return the height of the tree
+   */
+  public int height() {
+    return TreeNode.height(root);
+  }
+
+  /**
+   * Checks if this tree map is balanced.
+   *
+   * @return true if the tree is balanced, false otherwise
+   */
+  public boolean isBalanced() {
+    return isBalanced(root);
+  }
 }

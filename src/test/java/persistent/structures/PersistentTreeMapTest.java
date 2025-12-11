@@ -1,347 +1,579 @@
 package persistent.structures;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.NoSuchElementException;
-import java.util.List;
+import java.util.AbstractMap;
 import java.util.ArrayList;
-import java.util.Map.Entry;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Set;
+import java.util.stream.Collectors;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-/**
- * Unit tests for PersistentTreeMap implementation.
- */
+/** Comprehensive test suite for PersistentTreeMap. */
 class PersistentTreeMapTest {
 
-    @Test
-    void testEmptyMap() {
-        PersistentTreeMap<String, Integer> map = new PersistentTreeMap<>();
+  /** Empty map for testing. */
+  private PersistentTreeMap<String, Integer> emptyMap;
+  /** Map with elements for testing. */
+  private PersistentTreeMap<String, Integer> map;
 
-        assertTrue(map.isEmpty());
-        assertEquals(0, map.size());
-        assertEquals(0, map.height());
-        assertTrue(map.isBalanced());
-        assertFalse(map.containsKey("key"));
-        assertNull(map.get("key"));
+  @BeforeEach
+  void setUp() {
+    emptyMap = new PersistentTreeMap<>();
+
+    // Build map using put operations
+    PersistentTreeMap<String, Integer> temp = new PersistentTreeMap<>();
+    temp = temp.put("one", 1);
+    temp = temp.put("two", 2);
+    temp = temp.put("three", 3);
+    temp = temp.put("four", 4);
+    temp = temp.put("five", 5);
+    map = temp;
+  }
+
+  // ========== Basic Map Tests ==========
+
+  @Test
+  void testIsEmpty() {
+    assertTrue(emptyMap.isEmpty());
+    assertFalse(map.isEmpty());
+  }
+
+  @Test
+  void testSize() {
+    assertEquals(0, emptyMap.size());
+    assertEquals(5, map.size());
+  }
+
+  @Test
+  void testGet() {
+    assertEquals(1, map.get("one"));
+    assertEquals(2, map.get("two"));
+    assertEquals(3, map.get("three"));
+    assertEquals(4, map.get("four"));
+    assertEquals(5, map.get("five"));
+    assertNull(map.get("six"));
+    assertNull(map.get(null));
+  }
+
+  @Test
+  void testContainsKey() {
+    assertTrue(map.containsKey("one"));
+    assertTrue(map.containsKey("two"));
+    assertTrue(map.containsKey("three"));
+    assertTrue(map.containsKey("four"));
+    assertTrue(map.containsKey("five"));
+    assertFalse(map.containsKey("six"));
+    assertFalse(map.containsKey(null));
+  }
+
+  @Test
+  void testContainsValue() {
+    assertTrue(map.containsValue(1));
+    assertTrue(map.containsValue(2));
+    assertTrue(map.containsValue(3));
+    assertTrue(map.containsValue(4));
+    assertTrue(map.containsValue(5));
+    assertFalse(map.containsValue(6));
+    assertFalse(map.containsValue(null));
+  }
+
+  @Test
+  void testPutNewKey() {
+    PersistentTreeMap<String, Integer> newMap = map.put("six", 6);
+
+    assertEquals(6, newMap.size());
+    assertEquals(6, newMap.get("six"));
+    assertTrue(newMap.containsKey("six"));
+
+    // Original map unchanged
+    assertEquals(5, map.size());
+    assertFalse(map.containsKey("six"));
+  }
+
+  @Test
+  void testPutExistingKey() {
+    PersistentTreeMap<String, Integer> newMap = map.put("three", 33);
+
+    assertEquals(5, newMap.size());
+    assertEquals(33, newMap.get("three"));
+
+    // Original map unchanged
+    assertEquals(3, map.get("three"));
+  }
+
+  @Test
+  void testPutNullKey() {
+    PersistentTreeMap<String, Integer> newMap = map.put(null, 99);
+
+    // Should ignore null key
+    assertEquals(5, newMap.size());
+    assertNull(newMap.get(null));
+  }
+
+  @Test
+  void testRemove() {
+    PersistentTreeMap<String, Integer> newMap = map.remove("three");
+
+    assertEquals(4, newMap.size());
+    assertFalse(newMap.containsKey("three"));
+    assertTrue(newMap.containsKey("one"));
+    assertTrue(newMap.containsKey("two"));
+    assertTrue(newMap.containsKey("four"));
+    assertTrue(newMap.containsKey("five"));
+
+    // Original map unchanged
+    assertEquals(5, map.size());
+    assertTrue(map.containsKey("three"));
+  }
+
+  @Test
+  void testRemoveNonExistingKey() {
+    PersistentTreeMap<String, Integer> newMap = map.remove("six");
+
+    // Should return same instance
+    assertSame(map, newMap);
+    assertEquals(5, newMap.size());
+  }
+
+  @Test
+  void testRemoveNullKey() {
+    PersistentTreeMap<String, Integer> newMap = map.remove(null);
+
+    // Should return same instance
+    assertSame(map, newMap);
+    assertEquals(5, newMap.size());
+  }
+
+  @Test
+  void testFirstKey() {
+    // Keys are sorted: five, four, one, three, two
+    assertEquals("five", map.firstKey());
+  }
+
+  @Test
+  void testFirstKeyEmptyMap() {
+    assertThrows(NoSuchElementException.class, emptyMap::firstKey);
+  }
+
+  @Test
+  void testLastKey() {
+    // Keys are sorted: five, four, one, three, two
+    assertEquals("two", map.lastKey());
+  }
+
+  @Test
+  void testLastKeyEmptyMap() {
+    assertThrows(NoSuchElementException.class, emptyMap::lastKey);
+  }
+
+  @Test
+  void testHeight() {
+    assertEquals(0, emptyMap.height());
+    assertTrue(map.height() > 0);
+  }
+
+  @Test
+  void testIsBalanced() {
+    assertTrue(emptyMap.isBalanced());
+    assertTrue(map.isBalanced());
+  }
+
+  // ========== Collection Interface Tests ==========
+
+  @Test
+  void testIterator() {
+    List<Map.Entry<String, Integer>> entries = new ArrayList<>();
+    for (Map.Entry<String, Integer> entry : map) {
+      entries.add(entry);
     }
 
-    @Test
-    void testPutSingleElement() {
-        PersistentTreeMap<String, Integer> map = new PersistentTreeMap<>();
-        PersistentTreeMap<String, Integer> newMap = map.put("one", 1);
+    assertEquals(5, entries.size());
 
-        assertNotSame(map, newMap);
-        assertTrue(map.isEmpty());
-        assertFalse(newMap.isEmpty());
-        assertEquals(1, newMap.size());
-        assertEquals(1, newMap.height());
-        assertTrue(newMap.containsKey("one"));
-        assertEquals(Integer.valueOf(1), newMap.get("one"));
-        assertTrue(newMap.isBalanced());
+    // Check keys are in sorted order
+    List<String> keys = entries.stream().map(Map.Entry::getKey)
+        .collect(Collectors.toList());
+    assertEquals(Arrays.asList("five", "four", "one", "three", "two"), keys);
+
+    // Check values
+    List<Integer> values = entries.stream().map(Map.Entry::getValue)
+        .collect(Collectors.toList());
+    assertEquals(Arrays.asList(5, 4, 1, 3, 2), values);
+  }
+
+  @Test
+  void testIteratorEmptyMap() {
+    Iterator<Map.Entry<String, Integer>> iterator = emptyMap.iterator();
+    assertFalse(iterator.hasNext());
+    assertThrows(NoSuchElementException.class, iterator::next);
+  }
+
+  @Test
+  void testIteratorRemoveThrows() {
+    Iterator<Map.Entry<String, Integer>> iterator = map.iterator();
+    assertTrue(iterator.hasNext());
+    iterator.next();
+    assertThrows(UnsupportedOperationException.class, iterator::remove);
+  }
+
+  @Test
+  void testToArray() {
+    Object[] array = map.toArray();
+    assertEquals(5, array.length);
+
+    // Convert to List of entries for easier checking
+    List<Map.Entry<String, Integer>> entries =
+        Arrays.stream(array)
+            .map(obj -> (Map.Entry<String, Integer>) obj)
+            .collect(Collectors.toList());
+
+    assertTrue(entries.contains(new AbstractMap.SimpleEntry<>("one", 1)));
+    assertTrue(entries.contains(new AbstractMap.SimpleEntry<>("two", 2)));
+    assertTrue(entries.contains(new AbstractMap.SimpleEntry<>("three", 3)));
+    assertTrue(entries.contains(new AbstractMap.SimpleEntry<>("four", 4)));
+    assertTrue(entries.contains(new AbstractMap.SimpleEntry<>("five", 5)));
+  }
+
+  @Test
+  void testToArrayWithType() {
+    @SuppressWarnings("unchecked")
+    Map.Entry<String, Integer>[] array = map.toArray(new Map.Entry[0]);
+
+    assertEquals(5, array.length);
+
+    // Convert to Set for easier checking
+    Set<Map.Entry<String, Integer>> entrySet = new HashSet<>(
+        Arrays.asList(array));
+
+    assertTrue(entrySet.contains(new AbstractMap.SimpleEntry<>("one", 1)));
+    assertTrue(entrySet.contains(new AbstractMap.SimpleEntry<>("two", 2)));
+    assertTrue(entrySet.contains(new AbstractMap.SimpleEntry<>("three", 3)));
+    assertTrue(entrySet.contains(new AbstractMap.SimpleEntry<>("four", 4)));
+    assertTrue(entrySet.contains(new AbstractMap.SimpleEntry<>("five", 5)));
+  }
+
+  @Test
+  void testContains() {
+    assertTrue(map.contains(new AbstractMap.SimpleEntry<>("one", 1)));
+    assertTrue(map.contains(new AbstractMap.SimpleEntry<>("two", 2)));
+    assertTrue(map.contains(new AbstractMap.SimpleEntry<>("three", 3)));
+    // Wrong value
+    assertFalse(map.contains(new AbstractMap.SimpleEntry<>("one", 2)));
+    // Wrong key
+    assertFalse(map.contains(new AbstractMap.SimpleEntry<>("six", 6)));
+    assertFalse(map.contains("not an entry"));
+  }
+
+  @Test
+  void testContainsAll() {
+    Collection<Map.Entry<String, Integer>> entries =
+        Arrays.asList(
+            new AbstractMap.SimpleEntry<>("one", 1),
+            new AbstractMap.SimpleEntry<>("two", 2),
+            new AbstractMap.SimpleEntry<>("three", 3));
+
+    assertTrue(map.containsAll(entries));
+
+    Collection<Map.Entry<String, Integer>> mixedEntries =
+        Arrays.asList(
+            new AbstractMap.SimpleEntry<>("one", 1),
+            new AbstractMap.SimpleEntry<>("six", 6) // Doesn't exist
+            );
+
+    assertFalse(map.containsAll(mixedEntries));
+
+    // Empty collection should always return true
+    assertTrue(map.containsAll(Collections.emptyList()));
+  }
+
+  @Test
+  void testAddThrows() {
+    Map.Entry<String, Integer> entry = new AbstractMap.SimpleEntry<>("six", 6);
+    assertThrows(UnsupportedOperationException.class, () -> map.add(entry));
+  }
+
+  @Test
+  void testRemoveEntryThrows() {
+    Map.Entry<String, Integer> entry = new AbstractMap.SimpleEntry<>("one", 1);
+    assertThrows(UnsupportedOperationException.class, () -> map.remove(entry));
+  }
+
+  @Test
+  void testAddAllThrows() {
+    Collection<Map.Entry<String, Integer>> entries =
+        Arrays.asList(
+            new AbstractMap.SimpleEntry<>("six", 6),
+            new AbstractMap.SimpleEntry<>("seven", 7));
+
+    assertThrows(UnsupportedOperationException.class,
+        () -> map.addAll(entries));
+  }
+
+  @Test
+  void testRemoveAllThrows() {
+    Collection<Map.Entry<String, Integer>> entries =
+        Arrays.asList(
+            new AbstractMap.SimpleEntry<>("one", 1),
+            new AbstractMap.SimpleEntry<>("two", 2));
+
+    assertThrows(UnsupportedOperationException.class,
+        () -> map.removeAll(entries));
+  }
+
+  @Test
+  void testRetainAllThrows() {
+    Collection<Map.Entry<String, Integer>> entries =
+        Arrays.asList(
+            new AbstractMap.SimpleEntry<>("one", 3),
+            new AbstractMap.SimpleEntry<>("two", 4));
+
+    assertThrows(UnsupportedOperationException.class,
+        () -> map.retainAll(entries));
+  }
+
+  @Test
+  void testClearThrows() {
+    assertThrows(UnsupportedOperationException.class, map::clear);
+  }
+
+  @Test
+  void testCreateWithAdded() {
+    Map.Entry<String, Integer> entry = new AbstractMap.SimpleEntry<>("six", 6);
+    PersistentTreeMap<String, Integer> newMap =
+        (PersistentTreeMap<String, Integer>) map.createWithAdded(entry);
+
+    assertEquals(6, newMap.size());
+    assertEquals(6, newMap.get("six"));
+
+    // Original unchanged
+    assertEquals(5, map.size());
+    assertNull(map.get("six"));
+  }
+
+  @Test
+  void testCreateWithRemoved() {
+    Map.Entry<String, Integer> entry = new AbstractMap.SimpleEntry<>("one", 1);
+    PersistentTreeMap<String, Integer> newMap =
+        (PersistentTreeMap<String, Integer>) map.createWithRemoved(entry);
+
+    assertEquals(4, newMap.size());
+    assertFalse(newMap.containsKey("one"));
+
+    // Original unchanged
+    assertEquals(5, map.size());
+    assertTrue(map.containsKey("one"));
+  }
+
+  @Test
+  void testCreateEmpty() {
+    PersistentTreeMap<String, Integer> empty =
+        (PersistentTreeMap<String, Integer>) map.createEmpty();
+
+    assertTrue(empty.isEmpty());
+    assertEquals(0, empty.size());
+    assertNotSame(map, empty);
+  }
+
+  @Test
+  void testContainsElement() {
+    assertTrue(map.containsElement(new AbstractMap.SimpleEntry<>("one", 1)));
+    // Wrong value
+    assertFalse(map.containsElement(new AbstractMap.SimpleEntry<>("one", 2)));
+    // Wrong key
+    assertFalse(map.containsElement(new AbstractMap.SimpleEntry<>("six", 6)));
+  }
+
+  // ========== Persistence Tests ==========
+
+  @Test
+  void testImmutability() {
+    // Create original map
+    PersistentTreeMap<String, Integer> original = new PersistentTreeMap<>();
+    original = original.put("a", 1);
+    original = original.put("b", 2);
+
+    // Get snapshot
+    PersistentTreeMap<String, Integer> snapshot =
+        (PersistentTreeMap<String, Integer>) original.snapshot();
+
+    // Create new version (original remains unchanged)
+    PersistentTreeMap<String, Integer> modified = original.put("c", 3);
+
+    // Snapshot unchanged
+    assertEquals(2, snapshot.size());
+    assertTrue(snapshot.containsKey("a"));
+    assertTrue(snapshot.containsKey("b"));
+    assertFalse(snapshot.containsKey("c"));
+
+    // Modified has new entry
+    assertEquals(3, modified.size());
+    assertTrue(modified.containsKey("c"));
+
+    // Original unchanged
+    assertEquals(2, original.size());
+    assertFalse(original.containsKey("c"));
+  }
+
+  @Test
+  void testMultipleVersions() {
+    // Create version chain
+    PersistentTreeMap<String, Integer> v1 = new PersistentTreeMap<>();
+
+    PersistentTreeMap<String, Integer> v2 = v1.put("a", 1);
+    PersistentTreeMap<String, Integer> v3 = v2.put("b", 2);
+    PersistentTreeMap<String, Integer> v4 = v3.put("c", 3);
+
+    // Remove from middle version
+    PersistentTreeMap<String, Integer> v5 = v3.remove("b");
+
+    // All versions should be independent
+    assertEquals(0, v1.size());
+    assertEquals(1, v2.size());
+    assertEquals(1, v2.get("a"));
+
+    assertEquals(2, v3.size());
+    assertEquals(1, v3.get("a"));
+    assertEquals(2, v3.get("b"));
+
+    assertEquals(3, v4.size());
+    assertEquals(1, v4.get("a"));
+    assertEquals(2, v4.get("b"));
+    assertEquals(3, v4.get("c"));
+
+    assertEquals(1, v5.size());
+    assertEquals(1, v5.get("a"));
+    assertFalse(v5.containsKey("b"));
+  }
+
+  // ========== Performance and Edge Cases ==========
+
+  @Test
+  void testLargeNumberOfEntries() {
+    PersistentTreeMap<Integer, String> large = new PersistentTreeMap<>();
+    int count = 1000;
+
+    for (int i = 0; i < count; i++) {
+      large = large.put(i, "Value" + i);
     }
 
-    @Test
-    void testPutMultipleElements() {
-        PersistentTreeMap<String, Integer> map =
-            new PersistentTreeMap<String, Integer>()
-            .put("one", 1)
-            .put("two", 2)
-            .put("three", 3);
+    assertEquals(count, large.size());
 
-        assertEquals(3, map.size());
-        assertTrue(map.containsKey("one"));
-        assertTrue(map.containsKey("two"));
-        assertTrue(map.containsKey("three"));
-        assertEquals(Integer.valueOf(1), map.get("one"));
-        assertEquals(Integer.valueOf(2), map.get("two"));
-        assertEquals(Integer.valueOf(3), map.get("three"));
-        assertTrue(map.isBalanced());
+    // Verify all entries are present
+    for (int i = 0; i < count; i++) {
+      assertEquals("Value" + i, large.get(i));
+      assertTrue(large.containsKey(i));
     }
 
-    @Test
-    void testPutUpdateExisting() {
-        PersistentTreeMap<String, Integer> map =
-            new PersistentTreeMap<String, Integer>()
-            .put("key", 1);
+    // Verify tree is still balanced
+    assertTrue(large.isBalanced());
+  }
 
-        PersistentTreeMap<String, Integer> updated = map.put("key", 100);
+  @Test
+  void testBalancingAfterOperations() {
+    // Insert in ascending order (worst case for unbalanced BST)
+    PersistentTreeMap<Integer, String> tree = new PersistentTreeMap<>();
 
-        assertEquals(1, map.size());
-        assertEquals(1, updated.size());
-        assertEquals(Integer.valueOf(1), map.get("key"));
-        assertEquals(Integer.valueOf(100), updated.get("key"));
-        assertTrue(updated.isBalanced());
+    for (int i = 0; i < 100; i++) {
+      tree = tree.put(i, "Value" + i);
+      // Tree should remain balanced (AVL property)
+      assertTrue(tree.isBalanced(),
+          "Tree should be balanced after inserting " + i);
     }
 
-    @Test
-    void testRemoveElement() {
-        PersistentTreeMap<String, Integer> map =
-            new PersistentTreeMap<String, Integer>()
-            .put("one", 1)
-            .put("two", 2)
-            .put("three", 3);
-
-        PersistentTreeMap<String, Integer> withoutTwo = map.remove("two");
-
-        assertEquals(3, map.size());
-        assertEquals(2, withoutTwo.size());
-        assertTrue(map.containsKey("two"));
-        assertFalse(withoutTwo.containsKey("two"));
-        assertTrue(withoutTwo.containsKey("one"));
-        assertTrue(withoutTwo.containsKey("three"));
-        assertTrue(withoutTwo.isBalanced());
+    // Remove half the elements
+    for (int i = 0; i < 50; i++) {
+      tree = tree.remove(i);
+      assertTrue(tree.isBalanced(),
+          "Tree should be balanced after removing " + i);
     }
 
-    @Test
-    void testRemoveNonExistentElement() {
-        PersistentTreeMap<String, Integer> map =
-            new PersistentTreeMap<String, Integer>().put("key", 1);
-        PersistentTreeMap<String, Integer> sameMap = map.remove("nonexistent");
+    assertEquals(50, tree.size());
+  }
 
-        assertSame(map, sameMap);
-        assertEquals(1, sameMap.size());
-        assertEquals(map, sameMap);
-        assertTrue(sameMap.containsKey("key"));
-        assertEquals(Integer.valueOf(1), sameMap.get("key"));
-    }
+  @Test
+  void testToString() {
+    assertEquals("{}", emptyMap.toString());
 
-    @Test
-    void testRemoveFromEmptyMap() {
-        PersistentTreeMap<String, Integer> map = new PersistentTreeMap<>();
-        PersistentTreeMap<String, Integer> sameMap = map.remove("key");
+    PersistentTreeMap<String, Integer> simple = new PersistentTreeMap<>();
+    simple = simple.put("b", 2);
+    simple = simple.put("a", 1);
+    simple = simple.put("c", 3);
 
-        assertSame(map, sameMap);
-        assertTrue(sameMap.isEmpty());
-    }
+    String str = simple.toString();
+    // Should be in sorted order: a=1, b=2, c=3
+    assertTrue(str.contains("a=1"));
+    assertTrue(str.contains("b=2"));
+    assertTrue(str.contains("c=3"));
+    assertTrue(str.startsWith("{") && str.endsWith("}"));
+  }
 
-    @Test
-    void testFirstAndLastKey() {
-        PersistentTreeMap<String, Integer> map =
-            new PersistentTreeMap<String, Integer>()
-            .put("banana", 3)
-            .put("apple", 1)
-            .put("cherry", 2);
+  @Test
+  void testEqualsAndHashCode() {
+    PersistentTreeMap<String, Integer> map1 = new PersistentTreeMap<>();
+    map1 = map1.put("a", 1);
+    map1 = map1.put("b", 2);
+    map1 = map1.put("c", 3);
 
-        assertEquals("apple", map.firstKey());
-        assertEquals("cherry", map.lastKey());
-    }
+    PersistentTreeMap<String, Integer> map2 = new PersistentTreeMap<>();
+    map2 = map2.put("c", 3);
+    map2 = map2.put("a", 1);
+    map2 = map2.put("b", 2);
 
-    @Test
-    void testFirstKeyOnEmptyMap() {
-        PersistentTreeMap<String, Integer> map = new PersistentTreeMap<>();
+    // Different insertion order, same elements - should be equal
+    assertEquals(map1, map2);
+    assertEquals(map1.hashCode(), map2.hashCode());
 
-        assertThrows(NoSuchElementException.class, map::firstKey);
-    }
+    // Different size - not equal
+    PersistentTreeMap<String, Integer> map3 = new PersistentTreeMap<>();
+    map3 = map3.put("a", 1);
+    map3 = map3.put("b", 2);
 
-    @Test
-    void testLastKeyOnEmptyMap() {
-        PersistentTreeMap<String, Integer> map = new PersistentTreeMap<>();
+    assertNotEquals(map1, map3);
 
-        assertThrows(NoSuchElementException.class, map::lastKey);
-    }
+    // Different values - not equal
+    PersistentTreeMap<String, Integer> map4 = new PersistentTreeMap<>();
+    map4 = map4.put("a", 1);
+    map4 = map4.put("b", 2);
+    map4 = map4.put("c", 4); // Different value
 
-    @Test
-    void testContainsValue() {
-        PersistentTreeMap<String, Integer> map =
-            new PersistentTreeMap<String, Integer>()
-            .put("one", 1)
-            .put("two", 2)
-            .put("three", 3);
+    assertNotEquals(map1, map4);
 
-        assertTrue(map.containsValue(1));
-        assertTrue(map.containsValue(2));
-        assertTrue(map.containsValue(3));
-        assertFalse(map.containsValue(4));
-    }
+    // Empty maps should be equal
+    PersistentTreeMap<String, Integer> empty1 = new PersistentTreeMap<>();
+    PersistentTreeMap<String, Integer> empty2 = new PersistentTreeMap<>();
+    assertEquals(empty1, empty2);
+  }
 
-    @Test
-    void testIterator() {
-        PersistentTreeMap<String, Integer> map =
-            new PersistentTreeMap<String, Integer>()
-            .put("c", 3)
-            .put("a", 1)
-            .put("b", 2);
+  @Test
+  void testStreamSupport() {
+    List<String> keys = map.stream().map(Map.Entry::getKey)
+        .collect(Collectors.toList());
 
-        List<String> keys = new ArrayList<>();
-        List<Integer> values = new ArrayList<>();
-        for (Entry<String, Integer> entry : map) {
-            keys.add(entry.getKey());
-            values.add(entry.getValue());
-        }
+    // Should be in sorted order
+    assertEquals(Arrays.asList("five", "four", "one", "three", "two"), keys);
 
-        // Should be in sorted key order
-        assertEquals(List.of("a", "b", "c"), keys);
-        assertEquals(List.of(1, 2, 3), values);
-    }
+    // Filter by value
+    List<String> filteredKeys =
+        map.stream()
+            .filter(entry -> entry.getValue() > 2)
+            .map(Map.Entry::getKey)
+            .collect(Collectors.toList());
 
-    @Test
-    void testPersistence() {
-        PersistentTreeMap<String, Integer> original =
-            new PersistentTreeMap<String, Integer>()
-            .put("one", 1)
-            .put("two", 2);
-
-        PersistentTreeMap<String, Integer> modified = original.put("three", 3);
-
-        // Original should remain unchanged
-        assertEquals(2, original.size());
-        assertFalse(original.containsKey("three"));
-
-        // Modified should have new element
-        assertEquals(3, modified.size());
-        assertTrue(modified.containsKey("three"));
-
-        // Both should be balanced
-        assertTrue(original.isBalanced());
-        assertTrue(modified.isBalanced());
-    }
-
-    @Test
-    void testComplexOperations() {
-        PersistentTreeMap<Integer, String> map =
-            new PersistentTreeMap<Integer, String>()
-            .put(50, "fifty")
-            .put(30, "thirty")
-            .put(70, "seventy")
-            .put(20, "twenty")
-            .put(40, "forty")
-            .put(60, "sixty")
-            .put(80, "eighty");
-
-        // Test multiple operations
-        PersistentTreeMap<Integer, String> result = map
-            .remove(30)
-            .put(35, "thirty-five")
-            .remove(70)
-            .put(75, "seventy-five");
-
-        assertEquals(7, map.size());
-        assertEquals(7, result.size());
-        assertFalse(result.containsKey(30));
-        assertTrue(result.containsKey(35));
-        assertEquals("thirty-five", result.get(35));
-        assertFalse(result.containsKey(70));
-        assertTrue(result.containsKey(75));
-        assertEquals("seventy-five", result.get(75));
-        assertTrue(result.isBalanced());
-    }
-
-    @Test
-    void testBalancingWithSortedInput() {
-        // Insert sorted keys to test balancing
-        PersistentTreeMap<Integer, String> map = new PersistentTreeMap<>();
-        for (int i = 1; i <= 10; i++) {
-            map = map.put(i, "value" + i);
-        }
-
-        assertTrue(map.isBalanced());
-        // For 10 elements, height should be 4 or less in balanced tree
-        assertTrue(map.height() <= 4);
-        assertEquals(10, map.size());
-    }
-
-    @Test
-    void testVersioning() {
-        PersistentTreeMap<String, Integer> v1 = new PersistentTreeMap<>();
-        PersistentTreeMap<String, Integer> v2 = v1.put("a", 1);
-        PersistentTreeMap<String, Integer> v3 = v2.put("b", 2);
-
-        assertNotEquals(v1.getVersion(), v2.getVersion());
-        assertNotEquals(v2.getVersion(), v3.getVersion());
-    }
-
-    @Test
-    void testNullValues() {
-        PersistentTreeMap<String, String> map =
-            new PersistentTreeMap<String, String>()
-            .put("key1", null)
-            .put("key2", "value");
-
-        assertFalse(map.containsKey("key1"));
-        assertNull(map.get("key1"));
-        assertEquals("value", map.get("key2"));
-    }
-
-    @Test
-    void testComplexKeyTypes() {
-        // Test with complex keys
-        class ComplexKey implements Comparable<ComplexKey> {
-            private final int id;
-            private final String name;
-
-            ComplexKey(final int idValue, final String nameValue) {
-                this.id = idValue;
-                this.name = nameValue;
-            }
-
-            @Override
-            public int compareTo(final ComplexKey other) {
-                int idCompare = Integer.compare(id, other.id);
-                if (idCompare != 0) {
-                    return idCompare;
-                }
-                return name.compareTo(other.name);
-            }
-        }
-
-        PersistentTreeMap<ComplexKey, String> map =
-            new PersistentTreeMap<ComplexKey, String>()
-            .put(new ComplexKey(1, "first"), "value1")
-            .put(new ComplexKey(2, "second"), "value2")
-            .put(new ComplexKey(3, "third"), "value3");
-
-        assertEquals(3, map.size());
-        assertTrue(map.containsKey(new ComplexKey(1, "first")));
-        assertEquals("value1", map.get(new ComplexKey(1, "first")));
-        assertTrue(map.isBalanced());
-    }
-
-    @Test
-    void testLargeMap() {
-        PersistentTreeMap<Integer, Integer> map = new PersistentTreeMap<>();
-        for (int i = 0; i < 100; i++) {
-            map = map.put(i, i * 10);
-        }
-
-        assertEquals(100, map.size());
-        assertTrue(map.isBalanced());
-
-        // Test random access
-        for (int i = 0; i < 100; i++) {
-            assertEquals(Integer.valueOf(i * 10), map.get(i));
-        }
-
-        // Test first and last
-        assertEquals(Integer.valueOf(0), map.firstKey());
-        assertEquals(Integer.valueOf(99), map.lastKey());
-    }
-
-    @Test
-    void testToString() {
-        PersistentTreeMap<String, Integer> map =
-            new PersistentTreeMap<String, Integer>()
-            .put("b", 2)
-            .put("a", 1)
-            .put("c", 3);
-
-        String result = map.toString();
-        assertTrue(result.contains("a=1"));
-        assertTrue(result.contains("b=2"));
-        assertTrue(result.contains("c=3"));
-        assertTrue(result.startsWith("PersistentTreeMap{"));
-        assertTrue(result.endsWith("}"));
-    }
-
-    @Test
-    void testEmptyMapToString() {
-        PersistentTreeMap<String, Integer> map = new PersistentTreeMap<>();
-        assertEquals("PersistentTreeMap{}", map.toString());
-    }
+    assertEquals(Arrays.asList("five", "four", "three"), filteredKeys);
+  }
 }
