@@ -25,6 +25,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /** Comprehensive test suite for PersistentTreeMap. */
+@SuppressWarnings({"MagicNumber"})
 class PersistentTreeMapTest {
 
   /** Empty map for testing. */

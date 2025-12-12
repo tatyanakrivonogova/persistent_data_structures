@@ -23,6 +23,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 /** Comprehensive tests for PersistentBinaryTreeSlow. */
+@SuppressWarnings({"MagicNumber"})
 @DisplayName("Persistent Binary Tree Tests")
 class PersistentBinaryTreeSlowTest {
 

@@ -25,6 +25,7 @@ import org.junit.jupiter.params.provider.ValueSource;
  * Comprehensive tests for PersistentDoublyLinkedListFat and
  * TransactionalPersistentDoublyLinkedListFat.
  */
+@SuppressWarnings({"MagicNumber"})
 @DisplayName("Persistent Doubly Linked List Tests")
 class PersistentDoublyLinkedListFatFatTest {
 
