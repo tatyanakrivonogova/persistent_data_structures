@@ -1,99 +1,161 @@
 package persistent.structures;
 
-import java.util.Objects;
-import java.util.Iterator;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import persistent.core.PersistentStructure;
 import persistent.core.SimpleVersion;
 import persistent.core.Version;
 
 /**
- * Fat-node persistent doubly linked list.
- * Only the newest version can be modified (fat nodes).
- * Old versions remain immutable.
+ * Partially persistent doubly linked list implemented using the fat-node
+ * technique. Only the most recent version is mutable, older ones remain
+ * immutable. Nodes store versioned references for prev/next so the
+ * structure is shared efficiently.
  *
  * @param <E> element type
  */
-@SuppressWarnings({"LineLength", "LongLine", "MaxLineLength", "HiddenField", "JavadocMethod"})
+@SuppressWarnings({"LineLength", "LongLine", "MaxLineLength"})
 public final class PersistentDoublyLinkedListFat<E extends Comparable<E>>
         implements PersistentStructure<E> {
 
     /**
-     * Node with fat fields.
+     * Version-tagged reference stored inside a fat-node.
+     *
+     * @param <T> node element type
+     */
+    private static final class VersionedRef<T> {
+
+        /**
+         * Referred node (may be {@code null}).
+         */
+        private Node<T> value;
+
+        /**
+         * Version when this value was assigned.
+         */
+        private final int version;
+
+        VersionedRef(final Node<T> value, final int version) {
+            this.value = value;
+            this.version = version;
+        }
+
+        Node<T> getValue() {
+            return value;
+        }
+
+        int getVersion() {
+            return version;
+        }
+    }
+
+    /**
+     * Doubly linked list node with fat-node references.
      *
      * @param <T> element type
      */
     private static final class Node<T> {
 
-        /** Node value (immutable). */
+        /**
+         * Immutable element value.
+         */
         private final T value;
 
-        /** Previous node. */
-        private Node<T> prev;
+        /**
+         * Versioned reference to the previous node.
+         */
+        private VersionedRef<T> prev;
 
-        /** Next node. */
-        private Node<T> next;
+        /**
+         * Versioned reference to the next node.
+         */
+        private VersionedRef<T> next;
 
-        Node(final T value, final Node<T> prev, final Node<T> next) {
+        Node(final T value, final Node<T> prev,
+             final Node<T> next, final int version) {
+
             this.value = value;
-            this.prev = prev;
-            this.next = next;
+            this.prev = new VersionedRef<>(prev, version);
+            this.next = new VersionedRef<>(next, version);
+        }
+
+        T getValue() {
+            return value;
+        }
+
+        VersionedRef<T> getPrevRef() {
+            return prev;
+        }
+
+        VersionedRef<T> getNextRef() {
+            return next;
+        }
+
+        void setPrevRef(final VersionedRef<T> ref) {
+            this.prev = ref;
+        }
+
+        void setNextRef(final VersionedRef<T> ref) {
+            this.next = ref;
         }
     }
 
-    /** First element. */
+    /**
+     * Head of the list for this version.
+     */
     private final Node<E> head;
 
-    /** Last element. */
+    /**
+     * Tail of the list for this version.
+     */
     private final Node<E> tail;
 
-    /** Collection size. */
+    /**
+     * Number of elements in the list.
+     */
     private final int size;
 
     /**
-     * Full constructor used internally.
-     *
-     * @param head list head
-     * @param tail list tail
-     * @param size list size
+     * Version identifier for this snapshot.
      */
-    private PersistentDoublyLinkedListFat(final Node<E> head, final Node<E> tail,
-                                          final int size) {
+    private final int versionId;
+
+    /**
+     * Creates an empty persistent list (version {@code 0}).
+     */
+    public PersistentDoublyLinkedListFat() {
+        this(null, null, 0, 0);
+    }
+
+    /**
+     * Full internal constructor.
+     */
+    private PersistentDoublyLinkedListFat(final Node<E> head,
+                                          final Node<E> tail,
+                                          final int size,
+                                          final int versionId) {
         this.head = head;
         this.tail = tail;
         this.size = size;
+        this.versionId = versionId;
     }
 
-    /** Create empty list. */
-    public PersistentDoublyLinkedListFat() {
-        this(null, null, 0);
-    }
-
-    /** Create read-only snapshot version. */
+    /**
+     * Returns a read-only snapshot sharing all nodes.
+     */
     private PersistentDoublyLinkedListFat<E> snapshotVersion() {
-        return new PersistentDoublyLinkedListFat<>(head, tail, size);
+        return new PersistentDoublyLinkedListFat<>(head, tail, size, versionId);
     }
 
-    /** Copy full list into new mutable version. */
+    /**
+     * Creates a new mutable version object.
+     *
+     * @return new structure wrapper with {@code versionId + 1}
+     */
     private PersistentDoublyLinkedListFat<E> fork() {
-        Node<E> old = head;
-        Node<E> newHead = null;
-        Node<E> newPrev = null;
-
-        while (old != null) {
-            Node<E> node = new Node<>(old.value, newPrev, null);
-            if (newPrev != null) {
-                newPrev.next = node;
-            } else {
-                newHead = node;
-            }
-
-            newPrev = node;
-            old = old.next;
-        }
-
-        return new PersistentDoublyLinkedListFat<>(newHead, newPrev, size);
+        return new PersistentDoublyLinkedListFat<>(head, tail, size, versionId + 1);
     }
 
     @Override
@@ -103,37 +165,33 @@ public final class PersistentDoublyLinkedListFat<E extends Comparable<E>>
 
     @Override
     public PersistentStructure<E> createWithRemoved(final E element) {
-        Node<E> cur = head;
+        Node<E> current = head;
         int index = 0;
-        while (cur != null) {
-            if (Objects.equals(cur.value, element)) {
+
+        while (current != null) {
+            if (Objects.equals(current.getValue(), element)) {
                 return remove(index);
             }
-            cur = cur.next;
+            current = getNext(current);
             index++;
         }
         return this;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public PersistentStructure<E> createEmpty() {
         return new PersistentDoublyLinkedListFat<>();
     }
 
-    /**
-     * Check if element contains in the list.
-     */
     @Override
     public boolean containsElement(final E element) {
-        Node<E> node = head;
-        while (node != null) {
-            if (Objects.equals(node.value, element)) {
+        Node<E> current = head;
+
+        while (current != null) {
+            if (Objects.equals(current.getValue(), element)) {
                 return true;
             }
-            node = node.next;
+            current = getNext(current);
         }
         return false;
     }
@@ -159,10 +217,11 @@ public final class PersistentDoublyLinkedListFat<E extends Comparable<E>>
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public boolean contains(final Object o) {
         try {
             return containsElement((E) o);
-        } catch (ClassCastException ex) {
+        } catch (ClassCastException e) {
             return false;
         }
     }
@@ -180,52 +239,62 @@ public final class PersistentDoublyLinkedListFat<E extends Comparable<E>>
     @Override
     public Iterator<E> iterator() {
         return new Iterator<>() {
-            private Node<E> cur = head;
+
+            private Node<E> cursor = head;
+
+            @Override
             public boolean hasNext() {
-                return cur != null;
+                return cursor != null;
             }
+
+            @Override
             public E next() {
-                if (cur == null) {
+                if (cursor == null) {
                     throw new NoSuchElementException();
                 }
-                E val = cur.value;
-                cur = cur.next;
-                return val;
+                E value = cursor.getValue();
+                cursor = getNext(cursor);
+                return value;
             }
         };
     }
 
     @Override
     public Object[] toArray() {
-        Object[] array = new Object[size];
+        Object[] result = new Object[size];
         int i = 0;
-        for (E e : this) {
-            array[i++] = e;
+
+        for (E element : this) {
+            result[i++] = element;
         }
-        return array;
+        return result;
     }
 
     @Override
-    public <T> T[] toArray(final T[] a) {
-        T[] array = a;
-        if (a.length < size) {
-            array = (T[]) java.lang.reflect.Array.newInstance(
-                    a.getClass().getComponentType(), size);
+    @SuppressWarnings("unchecked")
+    public <T> T[] toArray(final T[] array) {
+        T[] result = array;
+
+        if (array.length < size) {
+            result = (T[]) java.lang.reflect.Array.newInstance(
+                    array.getClass().getComponentType(), size);
         }
+
         int i = 0;
-        for (E e : this) {
-            array[i++] = (T) e;
+        for (E element : this) {
+            result[i++] = (T) element;
         }
-        if (array.length > size) {
-            array[size] = null;
+
+        if (result.length > size) {
+            result[size] = null;
         }
-        return array;
+        return result;
     }
 
     @Override
-    public boolean containsAll(final Collection<?> c) {
-        for (Object o : c) {
-            if (!contains(o)) {
+    public boolean containsAll(final Collection<?> collection) {
+        for (Object item : collection) {
+            if (!contains(item)) {
                 return false;
             }
         }
@@ -253,154 +322,134 @@ public final class PersistentDoublyLinkedListFat<E extends Comparable<E>>
     }
 
     /**
-     * Returns element by index.
+     * Returns the list element at a given index.
      *
-     * @param index index of element
+     * @param index position of element
      * @return element value
      */
     public E get(final int index) {
         checkIndex(index);
-        return nodeAt(index).value;
+        return nodeAt(index).getValue();
     }
 
-    /**
-     * Adds value to the beginning of the list.
-     *
-     * @param v new value
-     * @return new list version
-     */
-    public PersistentDoublyLinkedListFat<E> addFirst(final E v) {
-        return add(0, v);
+    public PersistentDoublyLinkedListFat<E> addFirst(final E value) {
+        return add(0, value);
     }
 
-    /**
-     * Adds value to the end of the list.
-     *
-     * @param v new value
-     * @return new list version
-     */
-    public PersistentDoublyLinkedListFat<E> addLast(final E v) {
-        return add(size, v);
+    public PersistentDoublyLinkedListFat<E> addLast(final E value) {
+        return add(size, value);
     }
 
-    /**
-     * Removes the first element.
-     *
-     * @return new list version
-     */
     public PersistentDoublyLinkedListFat<E> removeFirst() {
         return remove(0);
     }
 
-    /**
-     * Removes the last element.
-     *
-     * @return new list version
-     */
     public PersistentDoublyLinkedListFat<E> removeLast() {
         return remove(size - 1);
     }
 
     /**
-     * Inserts a value at a given index.
-     *
-     * @param index target index
-     * @param value element to add
-     * @return new list version
+     * Inserts a value at a given index, modifying only the newest version.
      */
-    public PersistentDoublyLinkedListFat<E> add(final int index,
-                                                final E value) {
+    public PersistentDoublyLinkedListFat<E> add(
+            final int index,
+            final E value) {
+
         if (index < 0 || index > size) {
             throw new IndexOutOfBoundsException();
         }
-        PersistentDoublyLinkedListFat<E> self = fork();
 
-        if (self.size == 0) {
-            Node<E> node = new Node<>(value, null, null);
-            return new PersistentDoublyLinkedListFat<>(node, node, 1);
+        PersistentDoublyLinkedListFat<E> newVersion = fork();
+        int version = newVersion.versionId;
+
+        if (size == 0) {
+            Node<E> single = new Node<>(value, null, null, version);
+            return new PersistentDoublyLinkedListFat<>(single, single, 1, version);
         }
 
-        if (index == self.size) {
-            Node<E> node = new Node<>(value, self.tail, null);
-            self.tail.next = node;
-            return new PersistentDoublyLinkedListFat<>(self.head, node, size + 1);
+        if (index == size) {
+            Node<E> newTail = new Node<>(value, newVersion.tail, null, version);
+            setNext(newVersion.tail, newTail, version);
+            return new PersistentDoublyLinkedListFat<>(
+                    newVersion.head, newTail, size + 1, version);
         }
 
         if (index == 0) {
-            Node<E> node = new Node<>(value, null, self.head);
-            self.head.prev = node;
-            return new PersistentDoublyLinkedListFat<>(node, self.tail, size + 1);
+            Node<E> newHead = new Node<>(value, null, newVersion.head, version);
+            setPrev(newVersion.head, newHead, version);
+            return new PersistentDoublyLinkedListFat<>(
+                    newHead, newVersion.tail, size + 1, version);
         }
 
-        Node<E> cur = self.nodeAt(index);
-        Node<E> node = new Node<>(value, cur.prev, cur);
-        cur.prev.next = node;
-        cur.prev = node;
+        Node<E> current = newVersion.nodeAt(index);
+        Node<E> prevNode = getPrev(current);
+        Node<E> newNode = new Node<>(value, prevNode, current, version);
+
+        setNext(prevNode, newNode, version);
+        setPrev(current, newNode, version);
+
         return new PersistentDoublyLinkedListFat<>(
-                self.head,
-                self.tail,
-                size + 1
-        );
+                newVersion.head, newVersion.tail, size + 1, version);
     }
 
     /**
-     * Removes element at index.
-     *
-     * @param index index of removable element
-     * @return new list version
+     * Removes element at index using fat-node updates.
      */
     public PersistentDoublyLinkedListFat<E> remove(final int index) {
         checkIndex(index);
-        PersistentDoublyLinkedListFat<E> self = fork();
 
-        Node<E> cur = self.nodeAt(index);
+        PersistentDoublyLinkedListFat<E> newVersion = fork();
+        int version = newVersion.versionId;
 
-        Node<E> newHead = self.head;
-        Node<E> newTail = self.tail;
+        Node<E> current = newVersion.nodeAt(index);
+        Node<E> prevNode = getPrev(current);
+        Node<E> nextNode = getNext(current);
 
-        if (cur == self.head) {
-            newHead = cur.next;
-        }
-        if (cur == self.tail) {
-            newTail = cur.prev;
-        }
-
-        if (cur.prev != null) {
-            cur.prev.next = cur.next;
-        }
-        if (cur.next != null) {
-            cur.next.prev = cur.prev;
+        if (prevNode == null) { // remove head
+            // MUST update prev of the new head
+            if (nextNode != null) {
+                setPrev(nextNode, null, version);
+            }
+            return new PersistentDoublyLinkedListFat<>(
+                    nextNode, newVersion.tail, size - 1, version);
         }
 
-        return new PersistentDoublyLinkedListFat<>(newHead, newTail, size - 1);
+        if (nextNode == null) { // remove tail
+            setNext(prevNode, null, version);
+            return new PersistentDoublyLinkedListFat<>(
+                    newVersion.head, prevNode, size - 1, version);
+        }
+
+        setNext(prevNode, nextNode, version);
+        setPrev(nextNode, prevNode, version);
+
+        return new PersistentDoublyLinkedListFat<>(
+                newVersion.head, newVersion.tail, size - 1, version);
     }
 
     /**
-     * Get node at index.
-     *
-     * @param index node index
-     * @return node at index
+     * Returns the node at a given index.
      */
     private Node<E> nodeAt(final int index) {
-        Node<E> c;
-        if (index < (size >> 1)) {
-            c = head;
+        Node<E> cursor;
+
+        if (index < (size >>> 1)) {
+            cursor = head;
             for (int i = 0; i < index; i++) {
-                c = c.next;
+                cursor = getNext(cursor);
             }
         } else {
-            c = tail;
+            cursor = tail;
             for (int i = size - 1; i > index; i--) {
-                c = c.prev;
+                cursor = getPrev(cursor);
             }
         }
-        return c;
+
+        return cursor;
     }
 
     /**
-     * Validates index.
-     *
-     * @param index index to validate
+     * Ensures that index is within list bounds.
      */
     private void checkIndex(final int index) {
         if (index < 0 || index >= size) {
@@ -408,21 +457,56 @@ public final class PersistentDoublyLinkedListFat<E extends Comparable<E>>
         }
     }
 
+    /**
+     * Returns next pointer for given node in current version.
+     */
+    private Node<E> getNext(final Node<E> node) {
+        VersionedRef<E> ref = node.getNextRef();
+        return ref.getVersion() <= versionId ? ref.getValue() : null;
+    }
+
+    /**
+     * Returns previous pointer for given node in current version.
+     */
+    private Node<E> getPrev(final Node<E> node) {
+        VersionedRef<E> ref = node.getPrevRef();
+        return ref.getVersion() <= versionId ? ref.getValue() : null;
+    }
+
+    /**
+     * Writes next pointer to a node.
+     */
+    private void setNext(final Node<E> node,
+                         final Node<E> next,
+                         final int version) {
+        node.setNextRef(new VersionedRef<>(next, version));
+    }
+
+    /**
+     * Writes prev pointer to a node.
+     */
+    private void setPrev(final Node<E> node,
+                         final Node<E> prev,
+                         final int version) {
+        node.setPrevRef(new VersionedRef<>(prev, version));
+    }
+
     @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
+    public boolean equals(final Object obj) {
+        if (this == obj) {
             return true;
         }
-        if (!(o instanceof Collection<?> that)) {
+
+        if (!(obj instanceof Collection<?> other)) {
             return false;
         }
 
-        if (size() != that.size()) {
+        if (size != other.size()) {
             return false;
         }
 
         Iterator<E> it1 = iterator();
-        Iterator<?> it2 = that.iterator();
+        Iterator<?> it2 = other.iterator();
 
         while (it1.hasNext() && it2.hasNext()) {
             if (!Objects.equals(it1.next(), it2.next())) {
@@ -437,28 +521,28 @@ public final class PersistentDoublyLinkedListFat<E extends Comparable<E>>
     public int hashCode() {
         final int prime = 31;
         int result = 1;
+
         for (E element : this) {
             result = prime * result + (element == null ? 0 : element.hashCode());
         }
+
         return result;
     }
 
-    /**
-     * Returns string representation.
-     *
-     * @return string representation
-     */
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder("[");
-        Node<E> c = head;
-        while (c != null) {
-            sb.append(c.value);
-            c = c.next;
-            if (c != null) {
-                sb.append(", ");
+        StringBuilder builder = new StringBuilder("[");
+        Node<E> cursor = head;
+
+        while (cursor != null) {
+            builder.append(cursor.getValue());
+            cursor = getNext(cursor);
+
+            if (cursor != null) {
+                builder.append(", ");
             }
         }
-        return sb.append("]").toString();
+
+        return builder.append(']').toString();
     }
 }

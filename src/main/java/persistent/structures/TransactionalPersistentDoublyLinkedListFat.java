@@ -11,6 +11,7 @@ import java.util.concurrent.atomic.AtomicReference;
  *
  * @param <E> the type of elements, must be Comparable
  */
+@SuppressWarnings({"LineLength", "LongLine", "MaxLineLength"})
 public final class TransactionalPersistentDoublyLinkedListFat<E extends
         Comparable<E>> implements Collection<E> {
 
