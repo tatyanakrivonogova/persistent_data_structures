@@ -186,10 +186,21 @@ public final class PersistentDoublyLinkedListFat<E extends Comparable<E>>
         return true;
     }
 
-    @Override public boolean addAll(Collection<? extends E> c) { throw new UnsupportedOperationException(); }
-    @Override public boolean removeAll(Collection<?> c) { throw new UnsupportedOperationException(); }
-    @Override public boolean retainAll(Collection<?> c) { throw new UnsupportedOperationException(); }
-    @Override public void clear() { throw new UnsupportedOperationException(); }
+    @Override public boolean addAll(Collection<? extends E> c) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override public boolean removeAll(Collection<?> c) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override public boolean retainAll(Collection<?> c) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override public void clear() {
+        throw new UnsupportedOperationException();
+    }
 
     // ========== List operations ==========
 

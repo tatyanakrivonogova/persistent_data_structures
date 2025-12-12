@@ -24,10 +24,15 @@ public final class PersistentBinaryTreeSlow<T extends Comparable<T>>
    * @param <T> type of element in node, should implement Comparable<T>
    */
   private static final class Node<T extends Comparable<T>> {
+      /** The value stored in this node. */
     private T value;
+      /** The left child node. */
     private Node<T> left;
+      /** The right child node. */
     private Node<T> right;
+      /** The height of this node. */
     private int height;
+      /** The size of the subtree rooted at this node. */
     private int size;
 
     /**
@@ -129,11 +134,9 @@ public final class PersistentBinaryTreeSlow<T extends Comparable<T>>
     if (element == null) {
       return this;
     }
-    
-    // Deep copy the entire tree
+
     Node<T> newRoot = root != null ? root.deepCopy() : null;
-    
-    // Insert into the copy
+
     newRoot = insertMutable(newRoot, element);
     
     return new PersistentBinaryTreeSlow<>(newRoot);
@@ -146,13 +149,11 @@ public final class PersistentBinaryTreeSlow<T extends Comparable<T>>
     }
     
     if (root == null) {
-      return this; // Nothing to remove
+      return this;
     }
-    
-    // Deep copy the entire tree
+
     Node<T> newRoot = root.deepCopy();
-    
-    // Remove from the copy
+
     newRoot = deleteMutable(newRoot, element);
     
     return new PersistentBinaryTreeSlow<>(newRoot);
@@ -602,6 +603,13 @@ public final class PersistentBinaryTreeSlow<T extends Comparable<T>>
     return isBalanced(root);
   }
 
+    /**
+     * Checks if this tree is balanced.
+     *
+     * @param node node to check
+     *
+     * @return true if the tree is balanced, false otherwise
+     */
   private boolean isBalanced(final Node<T> node) {
     if (node == null) {
       return true;

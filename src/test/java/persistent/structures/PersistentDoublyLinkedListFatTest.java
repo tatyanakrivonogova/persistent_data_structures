@@ -24,8 +24,8 @@ import org.junit.jupiter.params.provider.ValueSource;
  * Comprehensive tests for PersistentDoublyLinkedListFat and
  * TransactionalPersistentDoublyLinkedListFat.
  */
-@SuppressWarnings({"MagicNumber", "LineLength"})
 @DisplayName("Persistent Doubly Linked List Tests")
+@SuppressWarnings({"MagicNumber", "LineLength", "LongLine", "MaxLineLength"})
 class PersistentDoublyLinkedListFatFatTest {
 
     /** Empty list for testing. */
