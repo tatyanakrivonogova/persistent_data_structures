@@ -148,15 +148,21 @@ public final class PersistentTreeMapSlow<K extends Comparable<K>, V>
         return get(key) != null;
     }
 
-    /** Checks value existence. */
+    /**
+     * Returns true if this map contains the specified value.
+     *
+     * @param value the value
+     * @return true if the map contains the value
+     */
     public boolean containsValue(final V value) {
         return containsValue(root, value);
     }
 
     /**
-     * Returns true if this map contains the specified value.
+     * Returns true if this node contains the specified value.
      *
      * @param value the value
+     * @param node node to look in
      * @return true if the map contains the value
      */
     private boolean containsValue(final Node<K, V> node,
@@ -195,6 +201,7 @@ public final class PersistentTreeMapSlow<K extends Comparable<K>, V>
      *
      * @param key the key
      * @param value the value
+     * @param node node-destination
      * @return new map version with the key-value pair added or updated
      */
     private Node<K, V> putCopy(final Node<K, V> node,
@@ -233,6 +240,7 @@ public final class PersistentTreeMapSlow<K extends Comparable<K>, V>
      * Method for internal use.
      *
      * @param key the key to remove
+     * @param node node-destination
      * @return new map version with the key removed
      */
     private Node<K, V> removeCopy(final Node<K, V> node,

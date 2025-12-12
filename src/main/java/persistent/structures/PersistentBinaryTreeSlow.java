@@ -507,7 +507,9 @@ public final class PersistentBinaryTreeSlow<T extends Comparable<T>>
 
     /** Iterator implementation. */
     private final class TreeIterator implements Iterator<T> {
+        /** List of elements. */
         private final List<T> elements;
+        /** Current index. */
         private int index;
 
         TreeIterator() {
@@ -575,18 +577,26 @@ public final class PersistentBinaryTreeSlow<T extends Comparable<T>>
         return findMax(root).value;
     }
 
-    /** Returns tree height. */
+    /**
+     * Returns tree height.
+     *
+     * @return height
+     */
     public int height() {
         return Node.height(root);
     }
 
-    /** Checks whether tree is balanced. */
+    /**
+     * Checks if tree balanced.
+     *
+     * @return is balanced
+     */
     public boolean isBalanced() {
         return isBalanced(root);
     }
 
     /**
-     * Recursively checks balance
+     * Recursively checks balance.
      *
      * @param node node to check
      * @return maximum element
