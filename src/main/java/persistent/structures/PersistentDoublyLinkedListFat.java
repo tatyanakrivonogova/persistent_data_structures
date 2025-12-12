@@ -551,7 +551,12 @@ public final class PersistentDoublyLinkedListFat<E extends Comparable<E>>
             return true;
         }
 
-        if (!(obj instanceof Collection<?> other) || size != other.size()) {
+        if (!(obj instanceof Collection<?>)) {
+            return false;
+        }
+
+        Collection<?> other = (Collection<?>) obj;
+        if (size != other.size()) {
             return false;
         }
 
