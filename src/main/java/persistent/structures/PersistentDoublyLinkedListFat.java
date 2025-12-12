@@ -16,7 +16,7 @@ import persistent.core.Version;
  *
  * @param <E> element type
  */
-@SuppressWarnings({"LineLength", "LongLine", "MaxLineLength"})
+@SuppressWarnings({"LineLength", "LongLine", "MaxLineLength", "HiddenField"})
 public final class PersistentDoublyLinkedListFat<E extends Comparable<E>>
         implements PersistentStructure<E> {
 
@@ -130,7 +130,12 @@ public final class PersistentDoublyLinkedListFat<E extends Comparable<E>>
     }
 
     /**
-     * Full internal constructor.
+     * Full constructor used internally.
+     *
+     * @param head list head
+     * @param tail list tail
+     * @param size list size
+     * @param versionId version
      */
     private PersistentDoublyLinkedListFat(final Node<E> head,
                                           final Node<E> tail,
@@ -144,6 +149,8 @@ public final class PersistentDoublyLinkedListFat<E extends Comparable<E>>
 
     /**
      * Returns a read-only snapshot sharing all nodes.
+     *
+     * @return snapshot list
      */
     private PersistentDoublyLinkedListFat<E> snapshotVersion() {
         return new PersistentDoublyLinkedListFat<>(head, tail, size, versionId);
@@ -332,24 +339,50 @@ public final class PersistentDoublyLinkedListFat<E extends Comparable<E>>
         return nodeAt(index).getValue();
     }
 
+    /**
+     * Put the element in the beginning.
+     *
+     * @param value  element to put
+     * @return new list version.
+     */
     public PersistentDoublyLinkedListFat<E> addFirst(final E value) {
         return add(0, value);
     }
 
+    /**
+     * Put the element in the end.
+     *
+     * @param value element to put
+     * @return new list version.
+     */
     public PersistentDoublyLinkedListFat<E> addLast(final E value) {
         return add(size, value);
     }
 
+    /**
+     * Remove the element in the beginning.
+     *
+     * @return new list version.
+     */
     public PersistentDoublyLinkedListFat<E> removeFirst() {
         return remove(0);
     }
 
+    /**
+     * Remove the element in the end.
+     *
+     * @return new list version.
+     */
     public PersistentDoublyLinkedListFat<E> removeLast() {
         return remove(size - 1);
     }
 
     /**
      * Inserts a value at a given index, modifying only the newest version.
+     *
+     * @param value element to put
+     * @param index where to put
+     * @return new list version.
      */
     public PersistentDoublyLinkedListFat<E> add(
             final int index,
@@ -394,6 +427,9 @@ public final class PersistentDoublyLinkedListFat<E extends Comparable<E>>
 
     /**
      * Removes element at index using fat-node updates.
+     *
+     * @param index what to remove
+     * @return new list version.
      */
     public PersistentDoublyLinkedListFat<E> remove(final int index) {
         checkIndex(index);
@@ -405,8 +441,7 @@ public final class PersistentDoublyLinkedListFat<E extends Comparable<E>>
         Node<E> prevNode = getPrev(current);
         Node<E> nextNode = getNext(current);
 
-        if (prevNode == null) { // remove head
-            // MUST update prev of the new head
+        if (prevNode == null) {
             if (nextNode != null) {
                 setPrev(nextNode, null, version);
             }
@@ -429,6 +464,9 @@ public final class PersistentDoublyLinkedListFat<E extends Comparable<E>>
 
     /**
      * Returns the node at a given index.
+     *
+     * @param index index in the list
+     * @return node at index
      */
     private Node<E> nodeAt(final int index) {
         Node<E> cursor;
@@ -450,6 +488,8 @@ public final class PersistentDoublyLinkedListFat<E extends Comparable<E>>
 
     /**
      * Ensures that index is within list bounds.
+     *
+     * @param index index to check
      */
     private void checkIndex(final int index) {
         if (index < 0 || index >= size) {
@@ -459,6 +499,8 @@ public final class PersistentDoublyLinkedListFat<E extends Comparable<E>>
 
     /**
      * Returns next pointer for given node in current version.
+     *
+     * @param node the target node
      */
     private Node<E> getNext(final Node<E> node) {
         VersionedRef<E> ref = node.getNextRef();
@@ -467,6 +509,8 @@ public final class PersistentDoublyLinkedListFat<E extends Comparable<E>>
 
     /**
      * Returns previous pointer for given node in current version.
+     *
+     * @param node the target node
      */
     private Node<E> getPrev(final Node<E> node) {
         VersionedRef<E> ref = node.getPrevRef();
@@ -475,6 +519,10 @@ public final class PersistentDoublyLinkedListFat<E extends Comparable<E>>
 
     /**
      * Writes next pointer to a node.
+     *
+     * @param node the target node
+     * @param next what to write
+     * @param version version on new node
      */
     private void setNext(final Node<E> node,
                          final Node<E> next,
@@ -484,6 +532,10 @@ public final class PersistentDoublyLinkedListFat<E extends Comparable<E>>
 
     /**
      * Writes prev pointer to a node.
+     *
+     * @param node the target node
+     * @param prev what to write
+     * @param version version on new node
      */
     private void setPrev(final Node<E> node,
                          final Node<E> prev,
