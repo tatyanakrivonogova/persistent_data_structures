@@ -16,6 +16,7 @@ import persistent.core.Version;
  *
  * @param <T> the type of elements, must be Comparable
  */
+@SuppressWarnings({"LineLength", "LongLine", "MaxLineLength"})
 public final class PersistentBinaryTreeSlow<T extends Comparable<T>>
         implements PersistentStructure<T> {
 
@@ -349,7 +350,13 @@ public final class PersistentBinaryTreeSlow<T extends Comparable<T>>
         return false;
     }
 
-    /** Mutable recursive insert. */
+    /**
+     * Recursive insert.
+     *
+     * @param node starting node
+     * @param value target value
+     * @return node
+     */
     private Node<T> insertMutable(final Node<T> node, final T value) {
         if (node == null) {
             return new Node<>(value, null, null);
@@ -366,7 +373,13 @@ public final class PersistentBinaryTreeSlow<T extends Comparable<T>>
         return balanceMutable(node);
     }
 
-    /** Mutable delete. */
+    /**
+     * Mutable delete.
+     *
+     * @param node starting node
+     * @param value target value
+     * @return node
+     */
     private Node<T> deleteMutable(final Node<T> node, final T value) {
         if (node == null) {
             return null;
@@ -391,7 +404,12 @@ public final class PersistentBinaryTreeSlow<T extends Comparable<T>>
         return balanceMutable(node);
     }
 
-    /** Balances AVL node. */
+    /**
+     * Balances AVL-node.
+     *
+     * @param node starting node
+     * @return node
+     */
     private Node<T> balanceMutable(final Node<T> node) {
         if (node == null) {
             return null;
@@ -412,7 +430,12 @@ public final class PersistentBinaryTreeSlow<T extends Comparable<T>>
         return node;
     }
 
-    /** Right rotation. */
+    /**
+     * Right rotation.
+     *
+     * @param y starting node
+     * @return node
+     */
     private Node<T> rotateRightMutable(final Node<T> y) {
         final Node<T> x = y.left;
         final Node<T> t2 = x.right;
@@ -423,7 +446,12 @@ public final class PersistentBinaryTreeSlow<T extends Comparable<T>>
         return x;
     }
 
-    /** Left rotation. */
+    /**
+     * Left rotation.
+     *
+     * @param x starting node
+     * @return node
+     */
     private Node<T> rotateLeftMutable(final Node<T> x) {
         final Node<T> y = x.right;
         final Node<T> t2 = y.left;
@@ -462,7 +490,12 @@ public final class PersistentBinaryTreeSlow<T extends Comparable<T>>
         return cur;
     }
 
-    /** Deletes minimal node. */
+    /**
+     * Finds min node.
+     *
+     * @param node starting node
+     * @return min node
+     */
     private Node<T> deleteMinMutable(final Node<T> node) {
         if (node.left == null) {
             return node.right;
@@ -503,7 +536,12 @@ public final class PersistentBinaryTreeSlow<T extends Comparable<T>>
         }
     }
 
-    /** In-order traversal helper. */
+    /**
+     * In-order traversal helper.
+     *
+     * @param  node node to work with
+     * @param action action to use
+     */
     private void inOrderTraversal(final Node<T> node,
                                   final java.util.function.Consumer<T> action) {
         if (node != null) {
@@ -547,7 +585,12 @@ public final class PersistentBinaryTreeSlow<T extends Comparable<T>>
         return isBalanced(root);
     }
 
-    /** Recursively checks balance. */
+    /**
+     * Recursively checks balance
+     *
+     * @param node node to check
+     * @return maximum element
+     */
     private boolean isBalanced(final Node<T> node) {
         if (node == null) {
             return true;
@@ -557,13 +600,5 @@ public final class PersistentBinaryTreeSlow<T extends Comparable<T>>
             return false;
         }
         return isBalanced(node.left) && isBalanced(node.right);
-    }
-
-    /** Deep copy of the tree. */
-    public PersistentBinaryTreeSlow<T> deepCopy() {
-        if (root == null) {
-            return new PersistentBinaryTreeSlow<>(null);
-        }
-        return new PersistentBinaryTreeSlow<>(root.deepCopy());
     }
 }

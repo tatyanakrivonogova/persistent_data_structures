@@ -18,16 +18,33 @@ import persistent.core.Version;
  * @param <K> key type, must be Comparable
  * @param <V> value type
  */
+@SuppressWarnings({"HiddenField"})
 public final class PersistentTreeMapSlow<K extends Comparable<K>, V>
         implements PersistentStructure<Map.Entry<K, V>> {
 
-    /** Immutable tree node. */
+    /**
+     * Immutable tree node.
+     * @param <K> the type of keys, must implement Comparable<K>
+     * @param <V> the type of mapped values
+     */
     private static final class Node<K, V> {
+        /** The key stored in this node. */
         private final K key;
+        /** The value stored in this node. */
         private final V value;
+        /** The left child node. */
         private final Node<K, V> left;
+        /** The right child node. */
         private final Node<K, V> right;
 
+        /**
+         * Constructs a new tree node.
+         *
+         * @param key the key
+         * @param value the value
+         * @param left the left child
+         * @param right the right child
+         */
         Node(final K key,
              final V value,
              final Node<K, V> left,
@@ -39,6 +56,7 @@ public final class PersistentTreeMapSlow<K extends Comparable<K>, V>
         }
     }
 
+    /** The root node of this tree map. */
     private final Node<K, V> root;
 
     /** Creates empty map. */
@@ -46,6 +64,10 @@ public final class PersistentTreeMapSlow<K extends Comparable<K>, V>
         this.root = null;
     }
 
+    /**
+     * Private constructor for internal use.
+     * @param root new root node
+     */
     private PersistentTreeMapSlow(final Node<K, V> root) {
         this.root = root;
     }
@@ -92,7 +114,12 @@ public final class PersistentTreeMapSlow<K extends Comparable<K>, V>
         return this;
     }
 
-    /** Returns value by key. */
+    /**
+     * Returns the value to which the specified key is mapped.
+     *
+     * @param key the key
+     * @return the value associated with the key, or null if not found
+     */
     public V get(final K key) {
         if (key == null) {
             return null;
@@ -111,7 +138,12 @@ public final class PersistentTreeMapSlow<K extends Comparable<K>, V>
         return null;
     }
 
-    /** Checks key existence. */
+    /**
+     * Returns true if this map contains the specified key.
+     *
+     * @param key the key
+     * @return true if the map contains the key
+     */
     public boolean containsKey(final K key) {
         return get(key) != null;
     }
@@ -121,6 +153,12 @@ public final class PersistentTreeMapSlow<K extends Comparable<K>, V>
         return containsValue(root, value);
     }
 
+    /**
+     * Returns true if this map contains the specified value.
+     *
+     * @param value the value
+     * @return true if the map contains the value
+     */
     private boolean containsValue(final Node<K, V> node,
                                   final V value) {
         if (node == null) {
@@ -133,7 +171,13 @@ public final class PersistentTreeMapSlow<K extends Comparable<K>, V>
                 || containsValue(node.right, value);
     }
 
-    /** Adds or replaces value. */
+    /**
+     * Associates the specified value with the specified key.
+     *
+     * @param key the key
+     * @param value the value
+     * @return new map version with the key-value pair added or updated
+     */
     public PersistentTreeMapSlow<K, V> put(final K key, final V value) {
         if (key == null) {
             return this;
@@ -146,6 +190,13 @@ public final class PersistentTreeMapSlow<K extends Comparable<K>, V>
         return new PersistentTreeMapSlow<>(newRoot);
     }
 
+    /**
+     * Method for internal use.
+     *
+     * @param key the key
+     * @param value the value
+     * @return new map version with the key-value pair added or updated
+     */
     private Node<K, V> putCopy(final Node<K, V> node,
                                final K key,
                                final V value) {
@@ -164,7 +215,12 @@ public final class PersistentTreeMapSlow<K extends Comparable<K>, V>
         return new Node<>(key, value, node.left, node.right);
     }
 
-    /** Removes key. */
+    /**
+     * Removes the mapping for the specified key.
+     *
+     * @param key the key to remove
+     * @return new map version with the key removed
+     */
     public PersistentTreeMapSlow<K, V> remove(final K key) {
         if (!containsKey(key)) {
             return this;
@@ -173,6 +229,12 @@ public final class PersistentTreeMapSlow<K extends Comparable<K>, V>
         return new PersistentTreeMapSlow<>(newRoot);
     }
 
+    /**
+     * Method for internal use.
+     *
+     * @param key the key to remove
+     * @return new map version with the key removed
+     */
     private Node<K, V> removeCopy(final Node<K, V> node,
                                   final K key) {
         if (node == null) {
@@ -198,11 +260,12 @@ public final class PersistentTreeMapSlow<K extends Comparable<K>, V>
         return new Node<>(min.key, min.value, node.left, newRight);
     }
 
-    private Node<K, V> findMin(Node<K, V> node) {
-        while (node.left != null) {
-            node = node.left;
+    private Node<K, V> findMin(final Node<K, V> node) {
+        Node<K, V> currentNode = node;
+        while (currentNode.left != null) {
+            currentNode = currentNode.left;
         }
-        return node;
+        return currentNode;
     }
 
     private Node<K, V> deleteMinCopy(final Node<K, V> node) {

@@ -15,6 +15,7 @@ import persistent.core.Version;
  *
  * @param <E> element type
  */
+@SuppressWarnings({"LineLength", "LongLine", "MaxLineLength", "HiddenField", "JavadocMethod"})
 public final class PersistentDoublyLinkedListFat<E extends Comparable<E>>
         implements PersistentStructure<E> {
 
@@ -50,7 +51,13 @@ public final class PersistentDoublyLinkedListFat<E extends Comparable<E>>
     /** Collection size. */
     private final int size;
 
-    /** Private constructor. */
+    /**
+     * Full constructor used internally.
+     *
+     * @param head list head
+     * @param tail list tail
+     * @param size list size
+     */
     private PersistentDoublyLinkedListFat(final Node<E> head, final Node<E> tail,
                                           final int size) {
         this.head = head;
@@ -173,7 +180,7 @@ public final class PersistentDoublyLinkedListFat<E extends Comparable<E>>
     @Override
     public Iterator<E> iterator() {
         return new Iterator<>() {
-            Node<E> cur = head;
+            private Node<E> cur = head;
             public boolean hasNext() {
                 return cur != null;
             }
