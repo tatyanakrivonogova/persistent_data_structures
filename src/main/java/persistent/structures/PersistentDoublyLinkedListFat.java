@@ -501,6 +501,7 @@ public final class PersistentDoublyLinkedListFat<E extends Comparable<E>>
      * Returns next pointer for given node in current version.
      *
      * @param node the target node
+     * @return new nnode
      */
     private Node<E> getNext(final Node<E> node) {
         VersionedRef<E> ref = node.getNextRef();
@@ -511,6 +512,7 @@ public final class PersistentDoublyLinkedListFat<E extends Comparable<E>>
      * Returns previous pointer for given node in current version.
      *
      * @param node the target node
+     * @return new node
      */
     private Node<E> getPrev(final Node<E> node) {
         VersionedRef<E> ref = node.getPrevRef();
