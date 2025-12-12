@@ -25,6 +25,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /** Comprehensive tests for TransactionalPersistentBinaryTree. */
+@SuppressWarnings({"MagicNumber"})
 class TransactionalPersistentBinaryTreeTest {
 
   /** Empty tree for testing. */

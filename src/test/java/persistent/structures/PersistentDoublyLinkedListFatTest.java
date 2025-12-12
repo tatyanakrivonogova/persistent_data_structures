@@ -1,0 +1,411 @@
+package persistent.structures;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+
+/**
+ * Comprehensive tests for PersistentDoublyLinkedListFat and
+ * TransactionalPersistentDoublyLinkedListFat.
+ */
+@DisplayName("Persistent Doubly Linked List Tests")
+@SuppressWarnings({"MagicNumber", "LineLength", "LongLine", "MaxLineLength"})
+class PersistentDoublyLinkedListFatFatTest {
+
+    /** Empty list for testing. */
+    private PersistentDoublyLinkedListFat<Integer> emptyList;
+    /** List with elements for testing. */
+    private PersistentDoublyLinkedListFat<Integer> listWithElements;
+
+    @BeforeEach
+    void setUp() {
+        emptyList = new PersistentDoublyLinkedListFat<>();
+        listWithElements =
+                (PersistentDoublyLinkedListFat<Integer>)
+                        emptyList.createWithAdded(1).createWithAdded(2).createWithAdded(3);
+    }
+
+    @Test
+    @DisplayName("Empty list should be empty")
+    void testEmptyList() {
+        assertTrue(emptyList.isEmpty());
+        assertEquals(0, emptyList.size());
+        assertFalse(emptyList.iterator().hasNext());
+    }
+
+    @Test
+    @DisplayName("Add elements to list")
+    void testAddElements() {
+        PersistentDoublyLinkedListFat<Integer> list =
+                (PersistentDoublyLinkedListFat<Integer>) emptyList.createWithAdded(10);
+        assertFalse(list.isEmpty());
+        assertEquals(1, list.size());
+        assertTrue(list.containsElement(10));
+
+        list = (PersistentDoublyLinkedListFat<Integer>) list.createWithAdded(20);
+        assertEquals(2, list.size());
+        assertTrue(list.containsElement(10));
+        assertTrue(list.containsElement(20));
+    }
+
+    @Test
+    @DisplayName("Remove elements from list")
+    void testRemoveElements() {
+        PersistentDoublyLinkedListFat<Integer> list =
+                (PersistentDoublyLinkedListFat<Integer>)
+                        listWithElements.createWithRemoved(2);
+        assertEquals(2, list.size());
+        assertTrue(list.containsElement(1));
+        assertFalse(list.containsElement(2));
+        assertTrue(list.containsElement(3));
+
+        list = (PersistentDoublyLinkedListFat<Integer>) list.createWithRemoved(1);
+        assertEquals(1, list.size());
+        assertFalse(list.containsElement(1));
+        assertTrue(list.containsElement(3));
+
+        list = (PersistentDoublyLinkedListFat<Integer>) list.createWithRemoved(3);
+        assertTrue(list.isEmpty());
+    }
+
+    @Test
+    @DisplayName("Remove non-existent element should return same list")
+    void testRemoveNonExistent() {
+        PersistentDoublyLinkedListFat<Integer> original = listWithElements;
+        PersistentDoublyLinkedListFat<Integer> modified =
+                (PersistentDoublyLinkedListFat<Integer>) original.createWithRemoved(99);
+        assertSame(original, modified);
+    }
+
+    @Test
+    @DisplayName("Create empty list")
+    void testCreateEmpty() {
+        PersistentDoublyLinkedListFat<Integer> empty =
+                (PersistentDoublyLinkedListFat<Integer>) listWithElements.createEmpty();
+        assertTrue(empty.isEmpty());
+        assertEquals(0, empty.size());
+    }
+
+    @Test
+    @DisplayName("Check contains element")
+    void testContainsElement() {
+        assertTrue(listWithElements.containsElement(1));
+        assertTrue(listWithElements.containsElement(2));
+        assertTrue(listWithElements.containsElement(3));
+        assertFalse(listWithElements.containsElement(4));
+    }
+
+    @Test
+    @DisplayName("Collection contains method")
+    void testCollectionContains() {
+        assertTrue(listWithElements.contains(1));
+        assertTrue(listWithElements.contains(2));
+        assertTrue(listWithElements.contains(3));
+        assertFalse(listWithElements.contains(4));
+        assertFalse(listWithElements.contains("string")); // Wrong type
+    }
+
+    @Test
+    @DisplayName("Iterator works correctly")
+    void testIterator() {
+        List<Integer> collected = new ArrayList<>();
+        for (Integer element : listWithElements) {
+            collected.add(element);
+        }
+
+        assertEquals(3, collected.size());
+        assertEquals(List.of(1, 2, 3), collected);
+    }
+
+    @Test
+    @DisplayName("Iterator should not support remove")
+    void testIteratorRemove() {
+        Iterator<Integer> iterator = listWithElements.iterator();
+        iterator.next();
+        assertThrows(UnsupportedOperationException.class, iterator::remove);
+    }
+
+    @Test
+    @DisplayName("To array methods")
+    void testToArray() {
+        Object[] array = listWithElements.toArray();
+        assertArrayEquals(new Object[] {1, 2, 3}, array);
+
+        Integer[] typedArray = listWithElements.toArray(new Integer[0]);
+        assertArrayEquals(new Integer[] {1, 2, 3}, typedArray);
+
+        Integer[] largerArray = new Integer[5];
+        Integer[] result = listWithElements.toArray(largerArray);
+        assertSame(largerArray, result);
+        assertArrayEquals(new Integer[] {1, 2, 3, null, null}, result);
+    }
+
+    @Test
+    @DisplayName("Contains all elements")
+    void testContainsAll() {
+        List<Integer> checkList = Arrays.asList(1, 3);
+        assertTrue(listWithElements.containsAll(checkList));
+
+        List<Integer> notAllList = Arrays.asList(1, 4);
+        assertFalse(listWithElements.containsAll(notAllList));
+    }
+
+    @Test
+    @DisplayName("Immutable operations throw exceptions")
+    void testImmutableOperations() {
+        PersistentDoublyLinkedListFat<Integer> list = listWithElements;
+
+        // Проверяем, что методы из Collection бросают исключения
+        assertThrows(UnsupportedOperationException.class, () -> list.add(4));
+        assertThrows(UnsupportedOperationException.class,
+                () -> list.remove((Object) 2));
+        assertThrows(UnsupportedOperationException.class,
+                () -> list.addAll(Arrays.asList(4, 5)));
+        assertThrows(UnsupportedOperationException.class,
+                () -> list.removeAll(Arrays.asList(1, 2)));
+        assertThrows(UnsupportedOperationException.class,
+                () -> list.retainAll(Arrays.asList(1)));
+        assertThrows(UnsupportedOperationException.class, () -> list.clear());
+
+        // Проверяем, что итератор не поддерживает remove
+        Iterator<Integer> iterator = list.iterator();
+        iterator.next();
+        assertThrows(UnsupportedOperationException.class, iterator::remove);
+    }
+
+    @Test
+    @DisplayName("Equals and hashCode")
+    void testEqualsAndHashCode() {
+        PersistentDoublyLinkedListFat<Integer> sameElements =
+                (PersistentDoublyLinkedListFat<Integer>)
+                        emptyList.createWithAdded(1).createWithAdded(2).createWithAdded(3);
+
+        PersistentDoublyLinkedListFat<Integer> differentElements =
+                (PersistentDoublyLinkedListFat<Integer>) emptyList.createWithAdded(4)
+                        .createWithAdded(5);
+
+        assertEquals(listWithElements, sameElements);
+        assertNotEquals(listWithElements, differentElements);
+        assertEquals(listWithElements.hashCode(), sameElements.hashCode());
+
+        // Different type collection with same elements
+        List<Integer> arrayList = Arrays.asList(1, 2, 3);
+        assertEquals(listWithElements, arrayList);
+
+        // Self equality
+        assertEquals(listWithElements, listWithElements);
+
+        // Null comparison
+        assertNotEquals(null, listWithElements);
+
+        // Different size
+        PersistentDoublyLinkedListFat<Integer> smaller =
+                (PersistentDoublyLinkedListFat<Integer>) emptyList.createWithAdded(1);
+        assertNotEquals(listWithElements, smaller);
+    }
+
+    @Test
+    @DisplayName("Get version")
+    void testGetVersion() {
+        assertNotNull(listWithElements.getVersion());
+        assertNotNull(emptyList.getVersion());
+    }
+
+    @Test
+    @DisplayName("List-specific methods: addFirst, addLast, add at index")
+    void testListSpecificAddMethods() {
+        PersistentDoublyLinkedListFat<Integer> list = emptyList;
+
+        list = list.addFirst(3); // [3]
+        assertEquals(1, list.size());
+        assertEquals(Integer.valueOf(3), list.get(0));
+
+        list = list.addFirst(1); // [1, 3]
+        assertEquals(2, list.size());
+        assertEquals(Integer.valueOf(1), list.get(0));
+        assertEquals(Integer.valueOf(3), list.get(1));
+
+        list = list.add(1, 2); // [1, 2, 3]
+        assertEquals(3, list.size());
+        assertEquals(Integer.valueOf(1), list.get(0));
+        assertEquals(Integer.valueOf(2), list.get(1));
+        assertEquals(Integer.valueOf(3), list.get(2));
+
+        list = list.addLast(4); // [1, 2, 3, 4]
+        assertEquals(4, list.size());
+        assertEquals(Integer.valueOf(4), list.get(3));
+
+        list = list.add(0, 0); // [0, 1, 2, 3, 4]
+        assertEquals(5, list.size());
+        assertEquals(Integer.valueOf(0), list.get(0));
+    }
+
+    @Test
+    @DisplayName("List methods: removeFirst, removeLast, remove at index")
+    void testListSpecificRemoveMethods() {
+        PersistentDoublyLinkedListFat<Integer> list =
+                emptyList.addFirst(1).addLast(2).addLast(3).addLast(4); // [1, 2, 3, 4]
+
+        list = list.removeFirst(); // [2, 3, 4]
+        assertEquals(3, list.size());
+        assertEquals(Integer.valueOf(2), list.get(0));
+        assertFalse(list.containsElement(1));
+
+        list = list.removeLast(); // [2, 3]
+        assertEquals(2, list.size());
+        assertEquals(Integer.valueOf(3), list.get(1));
+        assertFalse(list.containsElement(4));
+
+        list = list.remove(0); // [3]
+        assertEquals(1, list.size());
+        assertEquals(Integer.valueOf(3), list.get(0));
+
+        list = list.remove(0); // []
+        assertTrue(list.isEmpty());
+    }
+
+    @Test
+    @DisplayName("Add at invalid index throws exception")
+    void testAddInvalidIndex() {
+        assertThrows(IndexOutOfBoundsException.class, () -> emptyList.add(-1, 1));
+        assertThrows(IndexOutOfBoundsException.class, () -> emptyList.add(1, 1));
+        assertThrows(IndexOutOfBoundsException.class,
+                () -> listWithElements.add(-1, 1));
+        assertThrows(IndexOutOfBoundsException.class,
+                () -> listWithElements.add(4, 1));
+    }
+
+    @Test
+    @DisplayName("Get at invalid index throws exception")
+    void testGetInvalidIndex() {
+        assertThrows(IndexOutOfBoundsException.class, () -> emptyList.get(0));
+        assertThrows(IndexOutOfBoundsException.class, () -> emptyList.get(-1));
+        assertThrows(IndexOutOfBoundsException.class,
+                () -> listWithElements.get(-1));
+        assertThrows(IndexOutOfBoundsException.class,
+                () -> listWithElements.get(3));
+    }
+
+    @Test
+    @DisplayName("Remove at invalid index throws exception")
+    void testRemoveInvalidIndex() {
+        assertThrows(IndexOutOfBoundsException.class, () -> emptyList.remove(0));
+        assertThrows(IndexOutOfBoundsException.class, () -> emptyList.remove(-1));
+        assertThrows(IndexOutOfBoundsException.class,
+                () -> listWithElements.remove(-1));
+        assertThrows(IndexOutOfBoundsException.class,
+                () -> listWithElements.remove(3));
+    }
+
+    @Test
+    @DisplayName("Remove from empty list throws exception")
+    void testRemoveFromEmptyList() {
+        assertThrows(IndexOutOfBoundsException.class, () -> emptyList.removeFirst());
+        assertThrows(IndexOutOfBoundsException.class, () -> emptyList.removeLast());
+    }
+
+    @Test
+    @DisplayName("ToString method")
+    void testToString() {
+        assertEquals("[]", emptyList.toString());
+        assertEquals("[1, 2, 3]", listWithElements.toString());
+
+        PersistentDoublyLinkedListFat<String> stringList =
+                (PersistentDoublyLinkedListFat<String>)
+                        new PersistentDoublyLinkedListFat<String>().createWithAdded("a")
+                                .createWithAdded("b");
+        assertEquals("[a, b]", stringList.toString());
+    }
+
+    @Test
+    @DisplayName("Persistence: original list unchanged after modifications")
+    void testPersistence() {
+        PersistentDoublyLinkedListFat<Integer> original = listWithElements;
+        PersistentDoublyLinkedListFat<Integer> modified =
+                (PersistentDoublyLinkedListFat<Integer>) original.createWithAdded(4);
+
+        // Original unchanged
+        assertEquals(3, original.size());
+        assertFalse(original.containsElement(4));
+
+        // Modified has new element
+        assertEquals(4, modified.size());
+        assertTrue(modified.containsElement(4));
+
+        // They are different objects
+        assertNotSame(original, modified);
+    }
+
+    @Test
+    @DisplayName("Complex sequence of operations")
+    void testComplexOperations() {
+        PersistentDoublyLinkedListFat<Integer> list = emptyList;
+
+        // Build list: [5, 1, 3, 2, 4]
+        list = list.addFirst(3);
+        list = list.addFirst(1);
+        list = list.addLast(4);
+        list = list.add(1, 2);
+        list = list.addFirst(5);
+
+        assertEquals(5, list.size());
+        assertEquals(Integer.valueOf(5), list.get(0));
+        assertEquals(Integer.valueOf(1), list.get(1));
+        assertEquals(Integer.valueOf(2), list.get(2));
+        assertEquals(Integer.valueOf(3), list.get(3));
+        assertEquals(Integer.valueOf(4), list.get(4));
+
+        // Remove elements: [1, 2, 4]
+        list = list.removeFirst(); // Remove 5: [1, 2, 3, 4]
+        list = list.remove(2); // Remove 3: [1, 2, 4]
+
+        assertEquals(3, list.size());
+        assertFalse(list.containsElement(5));
+        assertFalse(list.containsElement(3));
+        assertTrue(list.containsElement(1));
+        assertTrue(list.containsElement(2));
+        assertTrue(list.containsElement(4));
+
+        // Convert to array
+        Integer[] array = list.toArray(new Integer[0]);
+        assertArrayEquals(new Integer[] {1, 2, 4}, array);
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {0, 1, 5, 10, 100})
+    @DisplayName("Add multiple elements and iterate")
+    void testAddMultipleElements(final int count) {
+        PersistentDoublyLinkedListFat<Integer> list = emptyList;
+        List<Integer> expected = new ArrayList<>();
+
+        for (int i = 0; i < count; i++) {
+            list = (PersistentDoublyLinkedListFat<Integer>) list.createWithAdded(i);
+            expected.add(i);
+        }
+
+        assertEquals(count, list.size());
+
+        List<Integer> actual = new ArrayList<>();
+        for (Integer element : list) {
+            actual.add(element);
+        }
+
+        assertEquals(expected, actual);
+    }
+}

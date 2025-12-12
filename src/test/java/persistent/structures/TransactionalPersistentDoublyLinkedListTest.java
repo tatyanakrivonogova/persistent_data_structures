@@ -25,6 +25,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /** Comprehensive tests for PersistentDoublyLinkedList. */
+@SuppressWarnings({"MagicNumber"})
 class TransactionalListTest {
 
   /** Empty list for testing. */
