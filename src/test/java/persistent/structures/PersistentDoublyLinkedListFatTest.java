@@ -14,7 +14,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-import java.util.NoSuchElementException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -25,7 +24,7 @@ import org.junit.jupiter.params.provider.ValueSource;
  * Comprehensive tests for PersistentDoublyLinkedListFat and
  * TransactionalPersistentDoublyLinkedListFat.
  */
-@SuppressWarnings({"MagicNumber"})
+@SuppressWarnings({"MagicNumber", "LineLength"})
 @DisplayName("Persistent Doubly Linked List Tests")
 class PersistentDoublyLinkedListFatFatTest {
 
