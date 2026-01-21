@@ -4,17 +4,15 @@
     "https://checkstyle.org/dtds/configuration_1_3.dtd">
 
 <module name="Checker">
-    
+
     <module name="TreeWalker">
+
         <module name="MagicNumber">
             <property name="severity" value="off"/>
         </module>
-        
-        <module name="StrictDuplicateCode">
-            <property name="severity" value="ignore"/>
-        </module>
+
     </module>
-    
+
     <module name="JavadocPackage">
         <property name="severity" value="ignore"/>
     </module>

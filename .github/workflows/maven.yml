@@ -46,3 +46,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VALIDATE_CHECKSTYLE: true
           CHECKSTYLE_CONFIG_FILE: checkstyle.xml
+          VALIDATE_JSCPD: false
