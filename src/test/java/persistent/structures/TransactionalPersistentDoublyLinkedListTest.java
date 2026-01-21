@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -111,6 +112,20 @@ class TransactionalListTest {
   }
 
   @Test
+  @DisplayName("Transactional addAll with index")
+  void testTransactionalAddAllWithIndex() {
+    List<Integer> toAdd = Arrays.asList(4, 5);
+    assertTrue(listWithElements.addAll(1, toAdd));
+
+    assertEquals(5, listWithElements.size());
+    assertEquals(Integer.valueOf(1), listWithElements.get(0));
+    assertEquals(Integer.valueOf(4), listWithElements.get(1));
+    assertEquals(Integer.valueOf(5), listWithElements.get(2));
+    assertEquals(Integer.valueOf(2), listWithElements.get(3));
+    assertEquals(Integer.valueOf(3), listWithElements.get(4));
+  }
+
+  @Test
   void testTransactionalRetainAll() {
     List<Integer> toRetain = Arrays.asList(2, 3);
     assertTrue(listWithElements.retainAll(toRetain));
@@ -129,6 +144,19 @@ class TransactionalListTest {
     listWithElements.clear();
     assertTrue(listWithElements.isEmpty());
     assertEquals(0, listWithElements.size());
+  }
+
+  @Test
+  @DisplayName("Transactional set")
+  void testTransactionalSet() {
+    assertEquals(Integer.valueOf(2), listWithElements.set(1, 20));
+    assertEquals(Integer.valueOf(20), listWithElements.get(1));
+    assertEquals(3, listWithElements.size());
+
+    assertThrows(IndexOutOfBoundsException.class, ()
+      -> listWithElements.set(-1, 0));
+    assertThrows(IndexOutOfBoundsException.class, ()
+      -> listWithElements.set(3, 0));
   }
 
   @Test
@@ -181,18 +209,18 @@ class TransactionalListTest {
     TransactionalPersistentDoublyLinkedList<Integer> list =
         new TransactionalPersistentDoublyLinkedList<>();
 
-    assertTrue(list.addFirst(3)); // [3]
+    list.addFirst(3); // [3]
     assertEquals(1, list.size());
     assertEquals(Integer.valueOf(3), list.get(0));
 
-    assertTrue(list.addFirst(1)); // [1, 3]
+    list.addFirst(1); // [1, 3]
     assertEquals(2, list.size());
 
-    assertTrue(list.add(1, 2)); // [1, 2, 3]
+    list.add(1, 2); // [1, 2, 3]
     assertEquals(3, list.size());
     assertEquals(Integer.valueOf(2), list.get(1));
 
-    assertTrue(list.addLast(4)); // [1, 2, 3, 4]
+    list.addLast(4); // [1, 2, 3, 4]
     assertEquals(4, list.size());
     assertEquals(Integer.valueOf(4), list.get(3));
 
@@ -211,6 +239,34 @@ class TransactionalListTest {
     // Remove last element
     assertEquals(Integer.valueOf(2), list.remove(0)); // []
     assertTrue(list.isEmpty());
+  }
+
+  @Test
+  @DisplayName("Test ListIterator functionality")
+  void testListIterator() {
+    ListIterator<Integer> iterator = listWithElements.listIterator();
+
+    assertTrue(iterator.hasNext());
+    assertFalse(iterator.hasPrevious());
+    assertEquals(0, iterator.nextIndex());
+    assertEquals(-1, iterator.previousIndex());
+
+    assertEquals(Integer.valueOf(1), iterator.next());
+
+    // Test set
+    iterator.set(10);
+    assertEquals(Integer.valueOf(10), listWithElements.get(0));
+
+    // Test add
+    iterator.add(15);
+    assertEquals(4, listWithElements.size());
+    assertEquals(Integer.valueOf(15), listWithElements.get(1));
+
+    // Test remove
+    iterator.next(); // Move to 2
+    iterator.remove();
+    assertEquals(3, listWithElements.size());
+    assertFalse(listWithElements.contains(2));
   }
 
   @Test
@@ -314,6 +370,35 @@ class TransactionalListTest {
   }
 
   @Test
+  @DisplayName("Test subList on transactional list")
+  void testTransactionalSubList() {
+    listWithElements.add(4);
+    listWithElements.add(5);
+
+    List<Integer> subList = listWithElements.subList(1, 4);
+    assertEquals(3, subList.size());
+    assertEquals(List.of(2, 3, 4), subList);
+
+    // Sublist should be immutable
+    assertThrows(UnsupportedOperationException.class, () -> subList.add(6));
+  }
+
+  @Test
+  @DisplayName("Test indexOf and lastIndexOf on transactional list")
+  void testTransactionalIndexOf() {
+    listWithElements.add(2);
+    listWithElements.add(1);
+
+    assertEquals(0, listWithElements.indexOf(1));
+    assertEquals(1, listWithElements.indexOf(2));
+    assertEquals(2, listWithElements.indexOf(3));
+
+    assertEquals(4, listWithElements.lastIndexOf(1));
+    assertEquals(3, listWithElements.lastIndexOf(2));
+    assertEquals(2, listWithElements.lastIndexOf(3));
+  }
+
+  @Test
   @DisplayName("Empty transactional list operations")
   void testEmptyTransactionalList() {
     assertTrue(emptyList.isEmpty());
@@ -332,6 +417,8 @@ class TransactionalListTest {
     assertThrows(NoSuchElementException.class, () -> emptyList.removeLast());
     assertThrows(IndexOutOfBoundsException.class, () -> emptyList.get(0));
     assertThrows(IndexOutOfBoundsException.class, () -> emptyList.remove(0));
+    assertThrows(IndexOutOfBoundsException.class, () -> emptyList.set(0, 10));
+    assertThrows(IndexOutOfBoundsException.class, () -> emptyList.add(1, 10));
   }
 
   @Test

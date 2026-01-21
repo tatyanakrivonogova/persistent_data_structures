@@ -10,9 +10,7 @@ import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -23,7 +21,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /** Comprehensive test suite for TransactionalPersistentTreeMap. */
-@SuppressWarnings({"MagicNumber"})
+@SuppressWarnings({"MagicNumber", "LineLength"})
 class TransactionalPersistentTreeMapTest {
 
   /** Empty map for testing. */
@@ -44,58 +42,22 @@ class TransactionalPersistentTreeMapTest {
     map.put("five", 5);
   }
 
-  // ========== Map-specific Tests ==========
+  // ========== Basic Map Tests ==========
 
   @Test
-  void testTransactionalPut() {
-    TransactionalPersistentTreeMap<String, Integer> transactional =
-        new TransactionalPersistentTreeMap<>();
-
-    // Test single put
-    assertTrue(transactional.put("a", 1));
-    assertEquals(1, transactional.size());
-    assertEquals(1, transactional.get("a"));
-
-    // Test multiple puts
-    assertTrue(transactional.put("b", 2));
-    assertTrue(transactional.put("c", 3));
-    assertEquals(3, transactional.size());
-    assertEquals(2, transactional.get("b"));
-    assertEquals(3, transactional.get("c"));
-
-    // Test updating existing key
-    assertTrue(transactional.put("a", 10));
-    assertEquals(3, transactional.size()); // Size unchanged
-    assertEquals(10, transactional.get("a")); // Value updated
-  }
-
-  @Test
-  void testTransactionalPutNullKey() {
-    // Should handle null key gracefully
-    assertFalse(emptyMap.put(null, 99));
+  void testSize() {
     assertEquals(0, emptyMap.size());
-    assertNull(emptyMap.get(null));
+    assertEquals(5, map.size());
   }
 
   @Test
-  void testTransactionalRemoveKey() {
-    // Test remove existing key
-    assertTrue(map.removeKey("three"));
-    assertEquals(4, map.size());
-    assertFalse(map.containsKey("three"));
-    assertNull(map.get("three"));
-
-    // Test remove non-existing key
-    assertFalse(map.removeKey("six"));
-    assertEquals(4, map.size());
-
-    // Test remove null key
-    assertFalse(map.removeKey(null));
-    assertEquals(4, map.size());
+  void testIsEmpty() {
+    assertTrue(emptyMap.isEmpty());
+    assertFalse(map.isEmpty());
   }
 
   @Test
-  void testTransactionalGet() {
+  void testGet() {
     assertEquals(1, map.get("one"));
     assertEquals(2, map.get("two"));
     assertEquals(3, map.get("three"));
@@ -106,7 +68,7 @@ class TransactionalPersistentTreeMapTest {
   }
 
   @Test
-  void testTransactionalContainsKey() {
+  void testContainsKey() {
     assertTrue(map.containsKey("one"));
     assertTrue(map.containsKey("two"));
     assertTrue(map.containsKey("three"));
@@ -117,7 +79,7 @@ class TransactionalPersistentTreeMapTest {
   }
 
   @Test
-  void testTransactionalContainsValue() {
+  void testContainsValue() {
     assertTrue(map.containsValue(1));
     assertTrue(map.containsValue(2));
     assertTrue(map.containsValue(3));
@@ -128,117 +90,146 @@ class TransactionalPersistentTreeMapTest {
   }
 
   @Test
-  void testTransactionalFirstKey() {
+  void testPutNewKey() {
+    Integer oldValue = map.put("six", 6);
+    assertNull(oldValue);
+    assertEquals(6, map.size());
+    assertEquals(6, map.get("six"));
+    assertTrue(map.containsKey("six"));
+  }
+
+  @Test
+  void testPutExistingKey() {
+    Integer oldValue = map.put("three", 33);
+    assertEquals(3, oldValue);
+    assertEquals(5, map.size()); // Size unchanged
+    assertEquals(33, map.get("three")); // Value updated
+  }
+
+  @Test
+  void testPutNullKey() {
+    Integer oldValue = map.put(null, 99);
+    assertNull(oldValue);
+    assertEquals(5, map.size()); // Should not add null key
+    assertNull(map.get(null));
+  }
+
+  @Test
+  void testRemove() {
+    Integer oldValue = map.remove("three");
+    assertEquals(3, oldValue);
+    assertEquals(4, map.size());
+    assertFalse(map.containsKey("three"));
+    assertNull(map.get("three"));
+  }
+
+  @Test
+  void testRemoveNonExistingKey() {
+    Integer oldValue = map.remove("six");
+    assertNull(oldValue);
+    assertEquals(5, map.size());
+  }
+
+  @Test
+  void testRemoveNullKey() {
+    Integer oldValue = map.remove(null);
+    assertNull(oldValue);
+    assertEquals(5, map.size());
+  }
+
+  @Test
+  void testPutAll() {
+    Map<String, Integer> other = new HashMap<>();
+    other.put("six", 6);
+    other.put("seven", 7);
+    other.put("one", 10); // Update existing
+
+    map.putAll(other);
+
+    assertEquals(7, map.size());
+    assertEquals(10, map.get("one")); // Updated
+    assertEquals(6, map.get("six")); // New
+    assertEquals(7, map.get("seven")); // New
+  }
+
+  @Test
+  void testClear() {
+    assertFalse(map.isEmpty());
+    map.clear();
+    assertTrue(map.isEmpty());
+    assertEquals(0, map.size());
+  }
+
+  @Test
+  void testClearEmptyMap() {
+    assertTrue(emptyMap.isEmpty());
+    emptyMap.clear();
+    assertTrue(emptyMap.isEmpty());
+  }
+
+  // ========== Tree-specific Methods ==========
+
+  @Test
+  void testFirstKey() {
     assertEquals("five", map.firstKey()); // Sorted order
   }
 
   @Test
-  void testTransactionalFirstKeyEmptyMap() {
+  void testFirstKeyEmptyMap() {
     assertThrows(NoSuchElementException.class, emptyMap::firstKey);
   }
 
   @Test
-  void testTransactionalLastKey() {
+  void testLastKey() {
     assertEquals("two", map.lastKey()); // Sorted order
   }
 
   @Test
-  void testTransactionalLastKeyEmptyMap() {
+  void testLastKeyEmptyMap() {
     assertThrows(NoSuchElementException.class, emptyMap::lastKey);
   }
 
   @Test
-  void testTransactionalHeight() {
+  void testHeight() {
     assertEquals(0, emptyMap.height());
     assertTrue(map.height() > 0);
   }
 
   @Test
-  void testTransactionalIsBalanced() {
+  void testIsBalanced() {
     assertTrue(emptyMap.isBalanced());
     assertTrue(map.isBalanced());
   }
 
-  // ========== Collection Interface Tests ==========
+  // ========== EntrySet, KeySet, Values Tests ==========
 
   @Test
-  void testTransactionalAdd() {
-    TransactionalPersistentTreeMap<String, Integer> transactional =
-        new TransactionalPersistentTreeMap<>();
-
-    Map.Entry<String, Integer> entry1 = new AbstractMap.SimpleEntry<>("a", 1);
-    Map.Entry<String, Integer> entry2 = new AbstractMap.SimpleEntry<>("b", 2);
-
-    assertTrue(transactional.add(entry1));
-    assertEquals(1, transactional.size());
-    assertEquals(1, transactional.get("a"));
-
-    assertTrue(transactional.add(entry2));
-    assertEquals(2, transactional.size());
-    assertEquals(2, transactional.get("b"));
-
-    // Add duplicate key with different value (should update)
-    Map.Entry<String, Integer> entry1Updated =
-        new AbstractMap.SimpleEntry<>("a", 10);
-    assertTrue(transactional.add(entry1Updated));
-    assertEquals(2, transactional.size()); // Size unchanged
-    assertEquals(10, transactional.get("a")); // Value updated
+  void testEntrySet() {
+    Set<Map.Entry<String, Integer>> entrySet = map.entrySet();
+    assertEquals(5, entrySet.size());
+    assertTrue(entrySet.contains(new AbstractMap.SimpleEntry<>("one", 1)));
   }
 
   @Test
-  void testTransactionalRemoveEntry() {
-    Map.Entry<String, Integer> entry =
-        new AbstractMap.SimpleEntry<>("three", 3);
-
-    // Test remove existing entry
-    assertTrue(map.remove(entry));
-    assertEquals(4, map.size());
-    assertFalse(map.containsKey("three"));
-
-    // Test remove with wrong value
-    Map.Entry<String, Integer> wrongValue =
-        new AbstractMap.SimpleEntry<>("two", 999);
-    assertFalse(map.remove(wrongValue));
-    assertEquals(4, map.size()); // Should not remove
-
-    // Test remove non-existing key
-    Map.Entry<String, Integer> nonExisting =
-        new AbstractMap.SimpleEntry<>("six", 6);
-    assertFalse(map.remove(nonExisting));
-    assertEquals(4, map.size());
-
-    // Test remove with wrong type
-    assertFalse(map.remove("not an entry"));
-    assertEquals(4, map.size());
+  void testKeySet() {
+    Set<String> keySet = map.keySet();
+    assertEquals(5, keySet.size());
+    assertTrue(keySet.contains("one"));
+    assertFalse(keySet.contains("six"));
   }
 
   @Test
-  void testTransactionalContains() {
-    assertTrue(map.contains(new AbstractMap.SimpleEntry<>("one", 1)));
-    assertTrue(map.contains(new AbstractMap.SimpleEntry<>("two", 2)));
-    assertTrue(map.contains(new AbstractMap.SimpleEntry<>("three", 3)));
-    assertFalse(map.contains(new AbstractMap.SimpleEntry<>("one", 2)));
-    assertFalse(map.contains(new AbstractMap.SimpleEntry<>("six", 6)));
-    assertFalse(map.contains("not an entry"));
-    assertFalse(map.contains(null));
+  void testValues() {
+    Collection<Integer> values = map.values();
+    assertEquals(5, values.size());
+    assertTrue(values.contains(1));
+    assertFalse(values.contains(6));
   }
 
   @Test
-  void testTransactionalSize() {
-    assertEquals(0, emptyMap.size());
-    assertEquals(5, map.size());
-  }
-
-  @Test
-  void testTransactionalIsEmpty() {
-    assertTrue(emptyMap.isEmpty());
-    assertFalse(map.isEmpty());
-  }
-
-  @Test
-  void testTransactionalIterator() {
+  void testEntrySetIterator() {
     List<Map.Entry<String, Integer>> entries = new ArrayList<>();
-    for (Map.Entry<String, Integer> entry : map) {
+    for (Map.Entry<String, Integer> entry : map.entrySet()) {
       entries.add(entry);
     }
 
@@ -253,149 +244,57 @@ class TransactionalPersistentTreeMapTest {
   }
 
   @Test
-  void testTransactionalToArray() {
-    Object[] array = map.toArray();
-    assertEquals(5, array.length);
+  void testEntrySetIteratorRemove() {
+    Iterator<Map.Entry<String, Integer>> iterator = map.entrySet().iterator();
+    assertTrue(iterator.hasNext());
+    Map.Entry<String, Integer> entry = iterator.next();
 
-    // Convert to Set for easier checking
-    Set<Map.Entry<String, Integer>> entrySet = new HashSet<>();
-    for (Object obj : array) {
-      @SuppressWarnings("unchecked")
-      Map.Entry<String, Integer> entry = (Map.Entry<String, Integer>) obj;
-      entrySet.add(entry);
-    }
-
-    assertTrue(entrySet.contains(new AbstractMap.SimpleEntry<>("one", 1)));
-    assertTrue(entrySet.contains(new AbstractMap.SimpleEntry<>("two", 2)));
-    assertTrue(entrySet.contains(new AbstractMap.SimpleEntry<>("three", 3)));
-    assertTrue(entrySet.contains(new AbstractMap.SimpleEntry<>("four", 4)));
-    assertTrue(entrySet.contains(new AbstractMap.SimpleEntry<>("five", 5)));
+    // Remove via iterator should work
+    iterator.remove();
+    assertEquals(4, map.size());
+    assertFalse(map.containsKey(entry.getKey()));
   }
 
   @Test
-  void testTransactionalContainsAll() {
-    Collection<Map.Entry<String, Integer>> entries =
-        Arrays.asList(
-            new AbstractMap.SimpleEntry<>("one", 1),
-            new AbstractMap.SimpleEntry<>("two", 2),
-            new AbstractMap.SimpleEntry<>("three", 3));
+  void testEntrySetAdd() {
+    Set<Map.Entry<String, Integer>> entrySet = map.entrySet();
+    Map.Entry<String, Integer> newEntry = new AbstractMap.SimpleEntry<>("six", 6);
 
-    assertTrue(map.containsAll(entries));
-
-    Collection<Map.Entry<String, Integer>> mixedEntries =
-        Arrays.asList(
-            new AbstractMap.SimpleEntry<>("one", 1),
-            new AbstractMap.SimpleEntry<>("six", 6));
-
-    assertFalse(map.containsAll(mixedEntries));
-
-    // Empty collection should always return true
-    assertTrue(map.containsAll(Collections.emptyList()));
+    assertTrue(entrySet.add(newEntry));
+    assertEquals(6, map.size());
+    assertEquals(6, map.get("six"));
   }
 
   @Test
-  void testTransactionalAddAll() {
-    TransactionalPersistentTreeMap<String, Integer> transactional =
-        new TransactionalPersistentTreeMap<>();
+  void testEntrySetRemove() {
+    Set<Map.Entry<String, Integer>> entrySet = map.entrySet();
+    Map.Entry<String, Integer> entry = new AbstractMap.SimpleEntry<>("one", 1);
 
-    Collection<Map.Entry<String, Integer>> entries =
-        Arrays.asList(
-            new AbstractMap.SimpleEntry<>("a", 1),
-            new AbstractMap.SimpleEntry<>("b", 2),
-            new AbstractMap.SimpleEntry<>("c", 3),
-            new AbstractMap.SimpleEntry<>("a", 4));
-
-    assertTrue(transactional.addAll(entries));
-    assertEquals(3, transactional.size());
-    assertEquals(4, transactional.get("a"));
-    assertEquals(2, transactional.get("b"));
-    assertEquals(3, transactional.get("c"));
-
-    // Add empty collection
-    assertFalse(transactional.addAll(Collections.emptyList()));
-    assertEquals(3, transactional.size());
-  }
-
-  @Test
-  void testTransactionalRemoveAll() {
-    Collection<Map.Entry<String, Integer>> toRemove =
-        Arrays.asList(
-            new AbstractMap.SimpleEntry<>("two", 2),
-            new AbstractMap.SimpleEntry<>("four", 4),
-            new AbstractMap.SimpleEntry<>("six", 6));
-
-    assertTrue(map.removeAll(toRemove));
-    assertEquals(3, map.size());
-    assertFalse(map.containsKey("two"));
-    assertFalse(map.containsKey("four"));
-    assertTrue(map.containsKey("one"));
-    assertTrue(map.containsKey("three"));
-    assertTrue(map.containsKey("five"));
-
-    // Remove empty collection
-    assertFalse(map.removeAll(Collections.emptyList()));
-  }
-
-  @Test
-  void testTransactionalRetainAll() {
-    Collection<Map.Entry<String, Integer>> toRetain =
-        Arrays.asList(
-            new AbstractMap.SimpleEntry<>("two", 2),
-            new AbstractMap.SimpleEntry<>("four", 4),
-            new AbstractMap.SimpleEntry<>("six", 6));
-
-    assertTrue(map.retainAll(toRetain));
-    assertEquals(2, map.size());
-    assertTrue(map.containsKey("two"));
-    assertTrue(map.containsKey("four"));
+    assertTrue(entrySet.remove(entry));
+    assertEquals(4, map.size());
     assertFalse(map.containsKey("one"));
-    assertFalse(map.containsKey("three"));
-    assertFalse(map.containsKey("five"));
-
-    // Retain all (no change)
-    TransactionalPersistentTreeMap<String, Integer> copy =
-        new TransactionalPersistentTreeMap<>();
-    copy.put("x", 1);
-    copy.put("y", 2);
-
-    Collection<Map.Entry<String, Integer>> allEntries =
-        Arrays.asList(
-            new AbstractMap.SimpleEntry<>("x", 1),
-            new AbstractMap.SimpleEntry<>("y", 2));
-
-    assertFalse(copy.retainAll(allEntries));
-    assertEquals(2, copy.size());
-
-    // Retain none
-    assertTrue(copy.retainAll(Collections.emptyList()));
-    assertTrue(copy.isEmpty());
   }
 
   @Test
-  void testTransactionalClear() {
-    assertFalse(map.isEmpty());
-    map.clear();
-    assertTrue(map.isEmpty());
-    assertEquals(0, map.size());
+  void testEntrySetRemoveWrongValue() {
+    Set<Map.Entry<String, Integer>> entrySet = map.entrySet();
+    Map.Entry<String, Integer> wrongEntry = new AbstractMap.SimpleEntry<>("one", 999);
+
+    assertFalse(entrySet.remove(wrongEntry));
+    assertEquals(5, map.size());
+    assertTrue(map.containsKey("one"));
   }
 
-  @Test
-  void testTransactionalClearEmptyMap() {
-    assertTrue(emptyMap.isEmpty());
-    emptyMap.clear();
-    assertTrue(emptyMap.isEmpty());
-  }
-
-  // ========== Persistence and Snapshot Tests ==========
+  // ========== Transactional-specific Methods ==========
 
   @Test
-  void testTransactionalSnapshot() {
+  void testSnapshot() {
     // Get snapshot
     PersistentTreeMap<String, Integer> snapshot = map.snapshot();
 
     // Modify transactional map
     map.put("six", 6);
-    map.removeKey("two");
+    map.remove("two");
 
     // Snapshot should remain unchanged
     assertEquals(5, snapshot.size());
@@ -417,7 +316,7 @@ class TransactionalPersistentTreeMapTest {
     TransactionalPersistentTreeMap<String, Integer> copy =
         map.transactionalCopy();
 
-    // Should have same content
+    // Should have same content initially
     assertEquals(map.size(), copy.size());
     assertEquals(map.get("one"), copy.get("one"));
     assertEquals(map.get("two"), copy.get("two"));
@@ -432,13 +331,20 @@ class TransactionalPersistentTreeMapTest {
     // Original should have new entry
     assertEquals(6, map.size());
     assertTrue(map.containsKey("six"));
+
+    // Modify copy independently
+    copy.put("seven", 7);
+    assertEquals(6, copy.size());
+    assertTrue(copy.containsKey("seven"));
+    assertFalse(map.containsKey("seven"));
   }
 
   @Test
   void testConcurrentModificationSafety() {
-    // Since we're using AtomicReference, we can safely iterate while modifying
-    Iterator<Map.Entry<String, Integer>> iterator = map.iterator();
-    map.put("six", 6); // Modify while iterating
+    Iterator<Map.Entry<String, Integer>> iterator = map.entrySet().iterator();
+
+    // Modify map while iterating
+    map.put("six", 6);
 
     // Should still work because iterator uses snapshot
     int count = 0;
@@ -447,12 +353,21 @@ class TransactionalPersistentTreeMapTest {
       count++;
     }
     assertEquals(5, count); // Original size, not new size
+
+    // New iterator should see updated state
+    Iterator<Map.Entry<String, Integer>> newIterator = map.entrySet().iterator();
+    int newCount = 0;
+    while (newIterator.hasNext()) {
+      newIterator.next();
+      newCount++;
+    }
+    assertEquals(6, newCount); // New size
   }
 
-  // ========== Performance Tests ==========
+  // ========== Performance and Stress Tests ==========
 
   @Test
-  void testTransactionalLargeNumberOfEntries() {
+  void testLargeNumberOfEntries() {
     TransactionalPersistentTreeMap<Integer, String> large =
         new TransactionalPersistentTreeMap<>();
     int count = 1000;
@@ -474,7 +389,7 @@ class TransactionalPersistentTreeMapTest {
   }
 
   @Test
-  void testTransactionalRandomOperations() {
+  void testRandomOperations() {
     Random random = new Random(42);
     TransactionalPersistentTreeMap<Integer, Integer> transactional =
         new TransactionalPersistentTreeMap<>();
@@ -487,17 +402,16 @@ class TransactionalPersistentTreeMapTest {
 
       switch (operation) {
         case 0: // Put
-          boolean treePut = transactional.put(key, value);
-          Integer oldRefValue = reference.put(key, value);
-          boolean refPut = oldRefValue == null || !oldRefValue.equals(value);
-          assertEquals(refPut, treePut,
+          Integer treeOldValue = transactional.put(key, value);
+          Integer refOldValue = reference.put(key, value);
+          assertEquals(refOldValue, treeOldValue,
             "Put operation mismatch for key: " + key);
           break;
 
         case 1: // Remove
-          boolean treeRemove = transactional.removeKey(key);
-          boolean refRemove = reference.remove(key) != null;
-          assertEquals(refRemove, treeRemove,
+          Integer treeRemoved = transactional.remove(key);
+          Integer refRemoved = reference.remove(key);
+          assertEquals(refRemoved, treeRemoved,
             "Remove operation mismatch for key: " + key);
           break;
 
@@ -526,8 +440,54 @@ class TransactionalPersistentTreeMapTest {
     }
   }
 
+  // ========== Edge Cases ==========
+
   @Test
-  void testTransactionalToString() {
+  void testEmptyMapOperations() {
+    assertTrue(emptyMap.isEmpty());
+    assertEquals(0, emptyMap.size());
+    assertNull(emptyMap.get("anything"));
+    assertFalse(emptyMap.containsKey("anything"));
+    assertFalse(emptyMap.containsValue(1));
+    assertEquals("{}", emptyMap.toString());
+
+    // Operations on empty map
+    assertNull(emptyMap.put("key", 1));
+    assertEquals(1, emptyMap.size());
+
+    emptyMap.clear();
+    assertTrue(emptyMap.isEmpty());
+  }
+
+  @Test
+  void testSingleElementMap() {
+    TransactionalPersistentTreeMap<String, Integer> single =
+        new TransactionalPersistentTreeMap<>();
+
+    assertNull(single.put("key", 42));
+    assertEquals(1, single.size());
+    assertEquals(42, single.get("key"));
+    assertTrue(single.containsKey("key"));
+    assertTrue(single.containsValue(42));
+    assertEquals("{key=42}", single.toString());
+
+    assertEquals(42, single.remove("key"));
+    assertTrue(single.isEmpty());
+  }
+
+  @Test
+  void testClassCastExceptionHandling() {
+    // These should not throw ClassCastException
+    assertNull(map.get(123)); // Wrong type for key
+    assertFalse(map.containsKey(123));
+    assertFalse(map.containsValue("wrong type"));
+
+    // Remove with wrong type should return null
+    assertNull(map.remove(123));
+  }
+
+  @Test
+  void testToString() {
     TransactionalPersistentTreeMap<String, Integer> transactional =
         new TransactionalPersistentTreeMap<>();
     transactional.put("b", 2);
@@ -540,5 +500,71 @@ class TransactionalPersistentTreeMapTest {
     assertTrue(str.contains("b=2"));
     assertTrue(str.contains("c=3"));
     assertTrue(str.startsWith("{") && str.endsWith("}"));
+  }
+
+  @Test
+  void testEqualsAndHashCode() {
+    TransactionalPersistentTreeMap<String, Integer> map1 =
+        new TransactionalPersistentTreeMap<>();
+    map1.put("a", 1);
+    map1.put("b", 2);
+    map1.put("c", 3);
+
+    TransactionalPersistentTreeMap<String, Integer> map2 =
+        new TransactionalPersistentTreeMap<>();
+    map2.put("c", 3);
+    map2.put("a", 1);
+    map2.put("b", 2);
+
+    // Different insertion order, same elements - should be equal
+    assertEquals(map1, map2);
+    assertEquals(map1.hashCode(), map2.hashCode());
+
+    // Compare with standard map
+    Map<String, Integer> standardMap = new java.util.TreeMap<>();
+    standardMap.put("a", 1);
+    standardMap.put("b", 2);
+    standardMap.put("c", 3);
+
+    assertEquals(standardMap, map1);
+    assertEquals(map1, standardMap);
+  }
+
+  @Test
+  void testEntrySetOperations() {
+    Set<Map.Entry<String, Integer>> entrySet = map.entrySet();
+
+    // Test containsAll
+    Collection<Map.Entry<String, Integer>> entries =
+        Arrays.asList(
+            new AbstractMap.SimpleEntry<>("one", 1),
+            new AbstractMap.SimpleEntry<>("two", 2));
+    assertTrue(entrySet.containsAll(entries));
+
+    // Test addAll
+    Collection<Map.Entry<String, Integer>> newEntries =
+        Arrays.asList(
+            new AbstractMap.SimpleEntry<>("six", 6),
+            new AbstractMap.SimpleEntry<>("seven", 7));
+    assertTrue(entrySet.addAll(newEntries));
+    assertEquals(7, map.size());
+
+    // Test retainAll
+    Collection<Map.Entry<String, Integer>> retainEntries =
+        Arrays.asList(
+            new AbstractMap.SimpleEntry<>("one", 1),
+            new AbstractMap.SimpleEntry<>("two", 2));
+    assertTrue(entrySet.retainAll(retainEntries));
+    assertEquals(2, map.size());
+    assertTrue(map.containsKey("one"));
+    assertTrue(map.containsKey("two"));
+
+    // Test removeAll
+    Collection<Map.Entry<String, Integer>> removeEntries =
+        Arrays.asList(new AbstractMap.SimpleEntry<>("one", 1));
+    assertTrue(entrySet.removeAll(removeEntries));
+    assertEquals(1, map.size());
+    assertFalse(map.containsKey("one"));
+    assertTrue(map.containsKey("two"));
   }
 }

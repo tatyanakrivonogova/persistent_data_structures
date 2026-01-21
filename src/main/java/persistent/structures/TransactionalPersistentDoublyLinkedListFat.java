@@ -2,18 +2,20 @@ package persistent.structures;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
+import java.util.ListIterator;
 import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Transactional wrapper for persistent doubly linked lists that provides
- * mutable Collection interface. Implements the 6-step transaction process.
+ * mutable List interface.
  *
  * @param <E> the type of elements, must be Comparable
  */
 @SuppressWarnings({"LineLength", "LongLine", "MaxLineLength"})
 public final class TransactionalPersistentDoublyLinkedListFat<E extends
-        Comparable<E>> implements Collection<E> {
+        Comparable<E>> implements List<E> {
 
     /** Atomic reference to the current version of the list. */
     private final AtomicReference<PersistentDoublyLinkedListFat<E>>
@@ -61,61 +63,16 @@ public final class TransactionalPersistentDoublyLinkedListFat<E extends
         }
     }
 
+    // ========== List interface methods ==========
+
     @Override
     public boolean add(final E e) {
-        return modify(list ->
-                (PersistentDoublyLinkedListFat<E>) list.createWithAdded(e)
-        );
+        return modify(list -> list.addLastInternal(e));
     }
 
     @Override
-    public boolean remove(final Object o) {
-        try {
-            @SuppressWarnings("unchecked")
-            E element = (E) o;
-            return modify(list ->
-                    (PersistentDoublyLinkedListFat<E>) list
-                            .createWithRemoved(element)
-            );
-        } catch (ClassCastException e) {
-            return false;
-        }
-    }
-
-    @Override
-    public boolean contains(final Object o) {
-        return currentRef.get().contains(o);
-    }
-
-    @Override
-    public int size() {
-        return currentRef.get().size();
-    }
-
-    @Override
-    public boolean isEmpty() {
-        return currentRef.get().isEmpty();
-    }
-
-    @Override
-    public Iterator<E> iterator() {
-        return currentRef.get().iterator();
-    }
-
-    @Override
-    public Object[] toArray() {
-        return currentRef.get().toArray();
-    }
-
-    @Override
-    @SuppressWarnings("unchecked")
-    public <T> T[] toArray(final T[] a) {
-        return currentRef.get().toArray(a);
-    }
-
-    @Override
-    public boolean containsAll(final Collection<?> c) {
-        return currentRef.get().containsAll(c);
+    public void add(final int index, final E element) {
+        modify(list -> list.addInternal(index, element));
     }
 
     @Override
@@ -127,11 +84,109 @@ public final class TransactionalPersistentDoublyLinkedListFat<E extends
                 list -> {
                     PersistentDoublyLinkedListFat<E> result = list;
                     for (E element : c) {
-                        result = (PersistentDoublyLinkedListFat<E>) result
-                                .createWithAdded(element);
+                        result = result.addLastInternal(element);
                     }
                     return result;
                 });
+    }
+
+    @Override
+    public boolean addAll(final int index, final Collection<? extends E> c) {
+        if (c.isEmpty()) {
+            return false;
+        }
+        return modify(
+                list -> {
+                    PersistentDoublyLinkedListFat<E> result = list;
+                    int i = index;
+                    for (E element : c) {
+                        result = result.addInternal(i, element);
+                        i++;
+                    }
+                    return result;
+                });
+    }
+
+    @Override
+    public void clear() {
+        modify(list -> new PersistentDoublyLinkedListFat<>());
+    }
+
+    @Override
+    public boolean contains(final Object o) {
+        return currentRef.get().contains(o);
+    }
+
+    @Override
+    public boolean containsAll(final Collection<?> c) {
+        return currentRef.get().containsAll(c);
+    }
+
+    @Override
+    public E get(final int index) {
+        return currentRef.get().get(index);
+    }
+
+    @Override
+    public int indexOf(final Object o) {
+        return currentRef.get().indexOf(o);
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return currentRef.get().isEmpty();
+    }
+
+    @Override
+    public Iterator<E> iterator() {
+        return new Iterator<E>() {
+            private final Iterator<E> snapshotIterator = currentRef.get().iterator();
+
+            @Override
+            public boolean hasNext() {
+                return snapshotIterator.hasNext();
+            }
+
+            @Override
+            public E next() {
+                return snapshotIterator.next();
+            }
+        };
+    }
+
+    @Override
+    public int lastIndexOf(final Object o) {
+        return currentRef.get().lastIndexOf(o);
+    }
+
+    @Override
+    public ListIterator<E> listIterator() {
+        return listIterator(0);
+    }
+
+    @Override
+    public ListIterator<E> listIterator(final int index) {
+        return new TransactionalListIterator(index);
+    }
+
+    @Override
+    public E remove(final int index) {
+        PersistentDoublyLinkedListFat<E> current = currentRef.get();
+        E element = current.get(index);
+        modify(list -> list.removeInternal(index));
+        return element;
+    }
+
+    @Override
+    public boolean remove(final Object o) {
+        try {
+            @SuppressWarnings("unchecked")
+            E element = (E) o;
+            return modify(list ->
+                (PersistentDoublyLinkedListFat<E>) list.createWithRemoved(element));
+        } catch (ClassCastException e) {
+            return false;
+        }
     }
 
     @Override
@@ -164,12 +219,6 @@ public final class TransactionalPersistentDoublyLinkedListFat<E extends
 
     @Override
     public boolean retainAll(final Collection<?> c) {
-        if (c.isEmpty()) {
-            boolean wasEmpty = isEmpty();
-            clear();
-            return !wasEmpty;
-        }
-
         return modify(
                 list -> {
                     PersistentDoublyLinkedListFat<E> newList =
@@ -178,16 +227,10 @@ public final class TransactionalPersistentDoublyLinkedListFat<E extends
 
                     for (E element : list) {
                         if (c.contains(element)) {
-                            newList = (PersistentDoublyLinkedListFat<E>) newList
-                                    .createWithAdded(element);
+                            newList = newList.addLastInternal(element);
                         } else {
                             changed = true;
                         }
-                    }
-
-                    // Check if size changed (some elements were removed)
-                    if (list.size() != newList.size()) {
-                        changed = true;
                     }
 
                     return changed ? newList : list;
@@ -195,10 +238,89 @@ public final class TransactionalPersistentDoublyLinkedListFat<E extends
     }
 
     @Override
-    public void clear() {
-        modify(list ->
-                new PersistentDoublyLinkedListFat<>());
+    public E set(final int index, final E element) {
+        PersistentDoublyLinkedListFat<E> current = currentRef.get();
+        E oldElement = current.get(index);
+        modify(list -> {
+            PersistentDoublyLinkedListFat<E> removed = list.removeInternal(index);
+            return removed.addInternal(index, element);
+        });
+        return oldElement;
     }
+
+    @Override
+    public int size() {
+        return currentRef.get().size();
+    }
+
+    @Override
+    public List<E> subList(final int fromIndex, final int toIndex) {
+        // Return a snapshot sublist (immutable)
+        return currentRef.get().subList(fromIndex, toIndex);
+    }
+
+    @Override
+    public Object[] toArray() {
+        return currentRef.get().toArray();
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T> T[] toArray(final T[] a) {
+        return currentRef.get().toArray(a);
+    }
+
+    /**
+     * Adds an element to the beginning of the list.
+     *
+     * @param e the element to add
+     */
+    public void addFirst(final E e) {
+        modify(list -> list.addFirstInternal(e));
+    }
+
+    /**
+     * Adds an element to the end of the list.
+     *
+     * @param e the element to add
+     */
+    public void addLast(final E e) {
+        modify(list -> list.addLastInternal(e));
+    }
+
+    /**
+     * Removes and returns the first element of the list.
+     *
+     * @return the removed first element
+     * @throws NoSuchElementException if the list is empty
+     */
+    public E removeFirst() {
+        PersistentDoublyLinkedListFat<E> current = currentRef.get();
+        if (current.isEmpty()) {
+            throw new NoSuchElementException("removeFirst from empty list");
+        }
+        E first = current.get(0);
+        modify(list -> list.removeFirstInternal());
+        return first;
+    }
+
+    /**
+     * Removes and returns the last element of the list.
+     *
+     * @return the removed last element
+     * @throws NoSuchElementException if the list is empty
+     */
+    public E removeLast() {
+        PersistentDoublyLinkedListFat<E> current = currentRef.get();
+        if (current.isEmpty()) {
+            throw new NoSuchElementException("removeLast from empty list");
+        }
+        E last = current.get(current.size() - 1);
+        modify(list -> list.removeLastInternal());
+        return last;
+    }
+
+    // ========== Transactional-specific methods ==========
 
     /**
      * Returns the current immutable snapshot.
@@ -220,96 +342,103 @@ public final class TransactionalPersistentDoublyLinkedListFat<E extends
         );
     }
 
-    // List-specific methods
-
-    /**
-     * Returns the element at the specified position.
-     *
-     * @param index the index of the element
-     * @return the element at the specified position
-     */
-    public E get(final int index) {
-        return currentRef.get().get(index);
-    }
-
-    /**
-     * Adds the specified element to the beginning of the list.
-     *
-     * @param e the element to add
-     * @return true if the list changed as a result of the call
-     */
-    public boolean addFirst(final E e) {
-        return modify(list -> list.addFirst(e));
-    }
-
-    /**
-     * Adds the specified element to the end of the list.
-     *
-     * @param e the element to add
-     * @return true if the list changed as a result of the call
-     */
-    public boolean addLast(final E e) {
-        return modify(list -> list.addLast(e));
-    }
-
-    /**
-     * Inserts the specified element at the specified position.
-     *
-     * @param index the index at which to insert
-     * @param element the element to insert
-     * @return true if the list changed as a result of the call
-     */
-    public boolean add(final int index, final E element) {
-        return modify(list -> list.add(index, element));
-    }
-
-    /**
-     * Removes and returns the first element of this list.
-     *
-     * @return the first element
-     * @throws NoSuchElementException if the list is empty
-     */
-    public E removeFirst() {
-        PersistentDoublyLinkedListFat<E> current = currentRef.get();
-        if (current.isEmpty()) {
-            throw new NoSuchElementException("removeFirst from empty list");
-        }
-        E first = current.get(0);
-        modify(list -> list.removeFirst());
-        return first;
-    }
-
-    /**
-     * Removes and returns the last element of this list.
-     *
-     * @return the last element
-     * @throws NoSuchElementException if the list is empty
-     */
-    public E removeLast() {
-        PersistentDoublyLinkedListFat<E> current = currentRef.get();
-        if (current.isEmpty()) {
-            throw new NoSuchElementException("removeLast from empty list");
-        }
-        E last = current.get(current.size() - 1);
-        modify(list -> list.removeLast());
-        return last;
-    }
-
-    /**
-     * Removes the element at the specified position.
-     *
-     * @param index the index of the element to remove
-     * @return the element that was removed
-     */
-    public E remove(final int index) {
-        PersistentDoublyLinkedListFat<E> current = currentRef.get();
-        E element = current.get(index);
-        modify(list -> list.remove(index));
-        return element;
-    }
-
     @Override
     public String toString() {
         return currentRef.get().toString();
+    }
+
+    // ========== Inner classes ==========
+
+    /**
+     * Transactional list iterator that supports modifications.
+     */
+    private class TransactionalListIterator implements ListIterator<E> {
+
+        /** Current cursor position. */
+        private int cursor;
+
+        /** Index of last returned element, or -1 if none. */
+        private int lastRet = -1;
+
+        /**
+         * Creates a new list iterator starting at the specified index.
+         *
+         * @param index starting index
+         * @throws IndexOutOfBoundsException if index is out of range
+         */
+        TransactionalListIterator(final int index) {
+            if (index < 0 || index > size()) {
+                throw new IndexOutOfBoundsException("Index: " + index);
+            }
+            this.cursor = index;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return cursor < size();
+        }
+
+        @Override
+        public E next() {
+            if (!hasNext()) {
+                throw new NoSuchElementException();
+            }
+            E result = get(cursor);
+            lastRet = cursor;
+            cursor++;
+            return result;
+        }
+
+        @Override
+        public boolean hasPrevious() {
+            return cursor > 0;
+        }
+
+        @Override
+        public E previous() {
+            if (!hasPrevious()) {
+                throw new NoSuchElementException();
+            }
+            cursor--;
+            lastRet = cursor;
+            return get(cursor);
+        }
+
+        @Override
+        public int nextIndex() {
+            return cursor;
+        }
+
+        @Override
+        public int previousIndex() {
+            return cursor - 1;
+        }
+
+        @Override
+        public void remove() {
+            if (lastRet < 0) {
+                throw new IllegalStateException();
+            }
+            TransactionalPersistentDoublyLinkedListFat.this.remove(lastRet);
+            if (lastRet < cursor) {
+                cursor--;
+            }
+            lastRet = -1;
+        }
+
+        @Override
+        public void set(final E e) {
+            if (lastRet < 0) {
+                throw new IllegalStateException();
+            }
+            TransactionalPersistentDoublyLinkedListFat.this.set(lastRet, e);
+        }
+
+        @Override
+        public void add(final E e) {
+            TransactionalPersistentDoublyLinkedListFat.this.add(cursor, e);
+            cursor++;
+            lastRet = -1;
+        }
     }
 }
