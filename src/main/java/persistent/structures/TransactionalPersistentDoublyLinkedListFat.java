@@ -270,38 +270,6 @@ public final class TransactionalPersistentDoublyLinkedListFat<E extends
         return currentRef.get().toArray(a);
     }
 
-    @Override
-    public void addFirst(final E e) {
-        modify(list -> list.addFirstInternal(e));
-    }
-
-    @Override
-    public void addLast(final E e) {
-        modify(list -> list.addLastInternal(e));
-    }
-
-    @Override
-    public E removeFirst() {
-        PersistentDoublyLinkedListFat<E> current = currentRef.get();
-        if (current.isEmpty()) {
-            throw new NoSuchElementException("removeFirst from empty list");
-        }
-        E first = current.get(0);
-        modify(list -> list.removeFirstInternal());
-        return first;
-    }
-
-    @Override
-    public E removeLast() {
-        PersistentDoublyLinkedListFat<E> current = currentRef.get();
-        if (current.isEmpty()) {
-            throw new NoSuchElementException("removeLast from empty list");
-        }
-        E last = current.get(current.size() - 1);
-        modify(list -> list.removeLastInternal());
-        return last;
-    }
-
     // ========== Transactional-specific methods ==========
 
     /**

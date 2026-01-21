@@ -476,34 +476,6 @@ public final class PersistentDoublyLinkedList<E extends Comparable<E>>
             + "TransactionalPersistentDoublyLinkedList for mutable operations.");
   }
 
-  @Override
-  public void addFirst(final E e) {
-    throw new UnsupportedOperationException(
-        "PersistentDoublyLinkedList is immutable. Use "
-            + "TransactionalPersistentDoublyLinkedList for mutable operations.");
-  }
-
-  @Override
-  public void addLast(final E e) {
-    throw new UnsupportedOperationException(
-        "PersistentDoublyLinkedList is immutable. Use "
-            + "TransactionalPersistentDoublyLinkedList for mutable operations.");
-  }
-
-  @Override
-  public E removeFirst() {
-    throw new UnsupportedOperationException(
-        "PersistentDoublyLinkedList is immutable. Use "
-            + "TransactionalPersistentDoublyLinkedList for mutable operations.");
-  }
-
-  @Override
-  public E removeLast() {
-    throw new UnsupportedOperationException(
-        "PersistentDoublyLinkedList is immutable. Use "
-            + "TransactionalPersistentDoublyLinkedList for mutable operations.");
-  }
-
   // ========== Persistent list-specific methods ==========
 
   /**
