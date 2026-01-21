@@ -559,7 +559,8 @@ public final class PersistentDoublyLinkedListFat<E extends Comparable<E>>
 
     /**
      * Unsupported operation. Immutable list. Use TransactionalPersistentDoublyLinkedListFat.
-     * 
+     *
+     * @param e  element to add
      * @throws UnsupportedOperationException always
      */
     public void addFirst(final E e) {
@@ -570,7 +571,8 @@ public final class PersistentDoublyLinkedListFat<E extends Comparable<E>>
 
     /**
      * Unsupported operation. Immutable list. Use TransactionalPersistentDoublyLinkedListFat.
-     * 
+     *
+     * @param e  element to add
      * @throws UnsupportedOperationException always
      */
     public void addLast(final E e) {
@@ -581,7 +583,8 @@ public final class PersistentDoublyLinkedListFat<E extends Comparable<E>>
 
     /**
      * Unsupported operation. Immutable list. Use TransactionalPersistentDoublyLinkedListFat.
-     * 
+     *
+     * @return removed element
      * @throws UnsupportedOperationException always
      */
     public E removeFirst() {
@@ -592,7 +595,8 @@ public final class PersistentDoublyLinkedListFat<E extends Comparable<E>>
 
     /**
      * Unsupported operation. Immutable list. Use TransactionalPersistentDoublyLinkedListFat.
-     * 
+     *
+     * @return removed element
      * @throws UnsupportedOperationException always
      */
     public E removeLast() {
