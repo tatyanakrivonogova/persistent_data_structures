@@ -141,12 +141,12 @@ public final class TransactionalPersistentDoublyLinkedListFat<E extends
     public Iterator<E> iterator() {
         return new Iterator<E>() {
             private final Iterator<E> snapshotIterator = currentRef.get().iterator();
-            
+
             @Override
             public boolean hasNext() {
                 return snapshotIterator.hasNext();
             }
-            
+
             @Override
             public E next() {
                 return snapshotIterator.next();
@@ -182,7 +182,7 @@ public final class TransactionalPersistentDoublyLinkedListFat<E extends
         try {
             @SuppressWarnings("unchecked")
             E element = (E) o;
-            return modify(list -> 
+            return modify(list ->
                 (PersistentDoublyLinkedListFat<E>) list.createWithRemoved(element));
         } catch (ClassCastException e) {
             return false;
@@ -270,14 +270,30 @@ public final class TransactionalPersistentDoublyLinkedListFat<E extends
         return currentRef.get().toArray(a);
     }
 
+    /**
+     * Adds an element to the beginning of the list.
+     *
+     * @param e the element to add
+     */
     public void addFirst(final E e) {
         modify(list -> list.addFirstInternal(e));
     }
 
+    /**
+     * Adds an element to the end of the list.
+     *
+     * @param e the element to add
+     */
     public void addLast(final E e) {
         modify(list -> list.addLastInternal(e));
     }
 
+    /**
+     * Removes and returns the first element of the list.
+     *
+     * @return the removed first element
+     * @throws NoSuchElementException if the list is empty
+     */
     public E removeFirst() {
         PersistentDoublyLinkedListFat<E> current = currentRef.get();
         if (current.isEmpty()) {
@@ -288,6 +304,12 @@ public final class TransactionalPersistentDoublyLinkedListFat<E extends
         return first;
     }
 
+    /**
+     * Removes and returns the last element of the list.
+     *
+     * @return the removed last element
+     * @throws NoSuchElementException if the list is empty
+     */
     public E removeLast() {
         PersistentDoublyLinkedListFat<E> current = currentRef.get();
         if (current.isEmpty()) {
@@ -331,22 +353,31 @@ public final class TransactionalPersistentDoublyLinkedListFat<E extends
      * Transactional list iterator that supports modifications.
      */
     private class TransactionalListIterator implements ListIterator<E> {
-        
+
+        /** Current cursor position. */
         private int cursor;
-        private int lastRet = -1;
         
+        /** Index of last returned element, or -1 if none. */
+        private int lastRet = -1;
+
+        /**
+         * Creates a new list iterator starting at the specified index.
+         *
+         * @param index starting index
+         * @throws IndexOutOfBoundsException if index is out of range
+         */
         TransactionalListIterator(final int index) {
             if (index < 0 || index > size()) {
                 throw new IndexOutOfBoundsException("Index: " + index);
             }
             this.cursor = index;
         }
-        
+
         @Override
         public boolean hasNext() {
             return cursor < size();
         }
-        
+
         @Override
         public E next() {
             if (!hasNext()) {
@@ -357,12 +388,12 @@ public final class TransactionalPersistentDoublyLinkedListFat<E extends
             cursor++;
             return result;
         }
-        
+
         @Override
         public boolean hasPrevious() {
             return cursor > 0;
         }
-        
+
         @Override
         public E previous() {
             if (!hasPrevious()) {
@@ -372,17 +403,17 @@ public final class TransactionalPersistentDoublyLinkedListFat<E extends
             lastRet = cursor;
             return get(cursor);
         }
-        
+
         @Override
         public int nextIndex() {
             return cursor;
         }
-        
+
         @Override
         public int previousIndex() {
             return cursor - 1;
         }
-        
+
         @Override
         public void remove() {
             if (lastRet < 0) {
@@ -394,7 +425,7 @@ public final class TransactionalPersistentDoublyLinkedListFat<E extends
             }
             lastRet = -1;
         }
-        
+
         @Override
         public void set(final E e) {
             if (lastRet < 0) {
@@ -402,7 +433,7 @@ public final class TransactionalPersistentDoublyLinkedListFat<E extends
             }
             TransactionalPersistentDoublyLinkedListFat.this.set(lastRet, e);
         }
-        
+
         @Override
         public void add(final E e) {
             TransactionalPersistentDoublyLinkedListFat.this.add(cursor, e);

@@ -358,17 +358,17 @@ public final class PersistentDoublyLinkedListFat<E extends Comparable<E>>
     @Override
     public ListIterator<E> listIterator(final int index) {
         checkIndexForIterator(index);
-        
+
         return new ListIterator<E>() {
             private Node<E> nextNode = (index == size) ? null : nodeAt(index);
             private Node<E> lastReturned = null;
             private int nextIndex = index;
-            
+
             @Override
             public boolean hasNext() {
                 return nextIndex < size;
             }
-            
+
             @Override
             public E next() {
                 if (!hasNext()) {
@@ -379,12 +379,12 @@ public final class PersistentDoublyLinkedListFat<E extends Comparable<E>>
                 nextIndex++;
                 return lastReturned.getValue();
             }
-            
+
             @Override
             public boolean hasPrevious() {
                 return nextIndex > 0;
             }
-            
+
             @Override
             public E previous() {
                 if (!hasPrevious()) {
@@ -395,29 +395,29 @@ public final class PersistentDoublyLinkedListFat<E extends Comparable<E>>
                 nextIndex--;
                 return lastReturned.getValue();
             }
-            
+
             @Override
             public int nextIndex() {
                 return nextIndex;
             }
-            
+
             @Override
             public int previousIndex() {
                 return nextIndex - 1;
             }
-            
+
             @Override
             public void remove() {
                 throw new UnsupportedOperationException(
                     "PersistentDoublyLinkedListFat is immutable");
             }
-            
+
             @Override
             public void set(final E e) {
                 throw new UnsupportedOperationException(
                     "PersistentDoublyLinkedListFat is immutable");
             }
-            
+
             @Override
             public void add(final E e) {
                 throw new UnsupportedOperationException(
@@ -431,18 +431,18 @@ public final class PersistentDoublyLinkedListFat<E extends Comparable<E>>
         if (fromIndex < 0 || toIndex > size || fromIndex > toIndex) {
             throw new IndexOutOfBoundsException();
         }
-        
+
         if (fromIndex == toIndex) {
             return new PersistentDoublyLinkedListFat<>();
         }
-        
+
         PersistentDoublyLinkedListFat<E> result = new PersistentDoublyLinkedListFat<>();
         Node<E> current = nodeAt(fromIndex);
         for (int i = fromIndex; i < toIndex; i++) {
             result = result.addLastInternal(current.getValue());
             current = getNext(current);
         }
-        
+
         return result;
     }
 
@@ -759,7 +759,7 @@ public final class PersistentDoublyLinkedListFat<E extends Comparable<E>>
      * Returns next pointer for given node in current version.
      *
      * @param node the target node
-     * @return new nnode
+     * @return next node
      */
     private Node<E> getNext(final Node<E> node) {
         if (node == null) {
@@ -773,7 +773,7 @@ public final class PersistentDoublyLinkedListFat<E extends Comparable<E>>
      * Returns previous pointer for given node in current version.
      *
      * @param node the target node
-     * @return new node
+     * @return previous node
      */
     private Node<E> getPrev(final Node<E> node) {
         if (node == null) {

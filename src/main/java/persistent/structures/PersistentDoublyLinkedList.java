@@ -280,17 +280,17 @@ public final class PersistentDoublyLinkedList<E extends Comparable<E>>
   @Override
   public ListIterator<E> listIterator(final int index) {
     checkIndexForIterator(index);
-    
+
     return new ListIterator<E>() {
       private Node<E> nextNode = (index == size) ? null : nodeAt(index);
       private Node<E> lastReturned = null;
       private int nextIndex = index;
-      
+
       @Override
       public boolean hasNext() {
         return nextIndex < size;
       }
-      
+
       @Override
       public E next() {
         if (!hasNext()) {
@@ -301,12 +301,12 @@ public final class PersistentDoublyLinkedList<E extends Comparable<E>>
         nextIndex++;
         return lastReturned.getValue();
       }
-      
+
       @Override
       public boolean hasPrevious() {
         return nextIndex > 0;
       }
-      
+
       @Override
       public E previous() {
         if (!hasPrevious()) {
@@ -317,29 +317,29 @@ public final class PersistentDoublyLinkedList<E extends Comparable<E>>
         nextIndex--;
         return lastReturned.getValue();
       }
-      
+
       @Override
       public int nextIndex() {
         return nextIndex;
       }
-      
+
       @Override
       public int previousIndex() {
         return nextIndex - 1;
       }
-      
+
       @Override
       public void remove() {
         throw new UnsupportedOperationException(
             "PersistentDoublyLinkedList is immutable");
       }
-      
+
       @Override
       public void set(final E e) {
         throw new UnsupportedOperationException(
             "PersistentDoublyLinkedList is immutable");
       }
-      
+
       @Override
       public void add(final E e) {
         throw new UnsupportedOperationException(
@@ -353,18 +353,18 @@ public final class PersistentDoublyLinkedList<E extends Comparable<E>>
     if (fromIndex < 0 || toIndex > size || fromIndex > toIndex) {
       throw new IndexOutOfBoundsException();
     }
-    
+
     if (fromIndex == toIndex) {
       return new PersistentDoublyLinkedList<>();
     }
-    
+
     PersistentDoublyLinkedList<E> result = new PersistentDoublyLinkedList<>();
     Node<E> current = nodeAt(fromIndex);
     for (int i = fromIndex; i < toIndex; i++) {
       result = result.addLastInternal(current.getValue());
       current = current.getNext();
     }
-    
+
     return result;
   }
 
@@ -404,7 +404,7 @@ public final class PersistentDoublyLinkedList<E extends Comparable<E>>
     return result;
   }
 
-  // ========== Mutable List interface methods (throw UnsupportedOperationException) ==========
+  // ========== Mutable List interface methods ==========
 
   @Override
   public boolean add(final E e) {
@@ -476,24 +476,44 @@ public final class PersistentDoublyLinkedList<E extends Comparable<E>>
             + "TransactionalPersistentDoublyLinkedList for mutable operations.");
   }
 
+  /**
+   * Adds element to the beginning (mutable version).
+   *
+   * @param e element to add
+   */
   public void addFirst(final E e) {
     throw new UnsupportedOperationException(
         "PersistentDoublyLinkedList is immutable. Use "
             + "TransactionalPersistentDoublyLinkedList for mutable operations.");
   }
 
+  /**
+   * Adds element to the end (mutable version).
+   *
+   * @param e element to add
+   */
   public void addLast(final E e) {
     throw new UnsupportedOperationException(
         "PersistentDoublyLinkedList is immutable. Use "
             + "TransactionalPersistentDoublyLinkedList for mutable operations.");
   }
 
+  /**
+   * Removes first element (mutable version).
+   *
+   * @return removed element
+   */
   public E removeFirst() {
     throw new UnsupportedOperationException(
         "PersistentDoublyLinkedList is immutable. Use "
             + "TransactionalPersistentDoublyLinkedList for mutable operations.");
   }
 
+  /**
+   * Removes last element (mutable version).
+   *
+   * @return removed element
+   */
   public E removeLast() {
     throw new UnsupportedOperationException(
         "PersistentDoublyLinkedList is immutable. Use "
@@ -529,7 +549,8 @@ public final class PersistentDoublyLinkedList<E extends Comparable<E>>
    * @param value element to add
    * @return new list version
    */
-  public PersistentDoublyLinkedList<E> addInternal(final int index, final E value) {
+  public PersistentDoublyLinkedList<E> addInternal(final int index,
+      final E value) {
     if (index < 0 || index > size) {
       throw new IndexOutOfBoundsException("index: " + index);
     }
