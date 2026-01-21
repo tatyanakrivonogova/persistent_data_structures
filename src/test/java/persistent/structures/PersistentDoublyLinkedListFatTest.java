@@ -14,6 +14,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
+import java.util.NoSuchElementException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -24,9 +26,9 @@ import org.junit.jupiter.params.provider.ValueSource;
  * Comprehensive tests for PersistentDoublyLinkedListFat and
  * TransactionalPersistentDoublyLinkedListFat.
  */
-@DisplayName("Persistent Doubly Linked List Tests")
+@DisplayName("Persistent Doubly Linked List Fat Tests")
 @SuppressWarnings({"MagicNumber", "LineLength", "LongLine", "MaxLineLength"})
-class PersistentDoublyLinkedListFatFatTest {
+class PersistentDoublyLinkedListFatTest {
 
     /** Empty list for testing. */
     private PersistentDoublyLinkedListFat<Integer> emptyList;
@@ -178,15 +180,30 @@ class PersistentDoublyLinkedListFatFatTest {
         assertThrows(UnsupportedOperationException.class,
                 () -> list.addAll(Arrays.asList(4, 5)));
         assertThrows(UnsupportedOperationException.class,
+                () -> list.addAll(0, Arrays.asList(4, 5)));
+        assertThrows(UnsupportedOperationException.class,
                 () -> list.removeAll(Arrays.asList(1, 2)));
         assertThrows(UnsupportedOperationException.class,
                 () -> list.retainAll(Arrays.asList(1)));
         assertThrows(UnsupportedOperationException.class, () -> list.clear());
+        assertThrows(UnsupportedOperationException.class, () -> list.set(0, 10));
+        assertThrows(UnsupportedOperationException.class, () -> list.add(0, 10));
+        assertThrows(UnsupportedOperationException.class, () -> list.addFirst(10));
+        assertThrows(UnsupportedOperationException.class, () -> list.addLast(10));
+        assertThrows(UnsupportedOperationException.class, () -> list.removeFirst());
+        assertThrows(UnsupportedOperationException.class, () -> list.removeLast());
 
         // Проверяем, что итератор не поддерживает remove
         Iterator<Integer> iterator = list.iterator();
         iterator.next();
         assertThrows(UnsupportedOperationException.class, iterator::remove);
+        
+        // Проверяем ListIterator
+        ListIterator<Integer> listIterator = list.listIterator();
+        listIterator.next();
+        assertThrows(UnsupportedOperationException.class, listIterator::remove);
+        assertThrows(UnsupportedOperationException.class, () -> listIterator.set(10));
+        assertThrows(UnsupportedOperationException.class, () -> listIterator.add(10));
     }
 
     @Test
@@ -228,67 +245,67 @@ class PersistentDoublyLinkedListFatFatTest {
     }
 
     @Test
-    @DisplayName("List-specific methods: addFirst, addLast, add at index")
+    @DisplayName("List-specific methods: addFirstInternal, addLastInternal, addInternal at index")
     void testListSpecificAddMethods() {
         PersistentDoublyLinkedListFat<Integer> list = emptyList;
 
-        list = list.addFirst(3); // [3]
+        list = list.addFirstInternal(3); // [3]
         assertEquals(1, list.size());
         assertEquals(Integer.valueOf(3), list.get(0));
 
-        list = list.addFirst(1); // [1, 3]
+        list = list.addFirstInternal(1); // [1, 3]
         assertEquals(2, list.size());
         assertEquals(Integer.valueOf(1), list.get(0));
         assertEquals(Integer.valueOf(3), list.get(1));
 
-        list = list.add(1, 2); // [1, 2, 3]
+        list = list.addInternal(1, 2); // [1, 2, 3]
         assertEquals(3, list.size());
         assertEquals(Integer.valueOf(1), list.get(0));
         assertEquals(Integer.valueOf(2), list.get(1));
         assertEquals(Integer.valueOf(3), list.get(2));
 
-        list = list.addLast(4); // [1, 2, 3, 4]
+        list = list.addLastInternal(4); // [1, 2, 3, 4]
         assertEquals(4, list.size());
         assertEquals(Integer.valueOf(4), list.get(3));
 
-        list = list.add(0, 0); // [0, 1, 2, 3, 4]
+        list = list.addInternal(0, 0); // [0, 1, 2, 3, 4]
         assertEquals(5, list.size());
         assertEquals(Integer.valueOf(0), list.get(0));
     }
 
     @Test
-    @DisplayName("List methods: removeFirst, removeLast, remove at index")
+    @DisplayName("List methods: removeFirstInternal, removeLastInternal, removeInternal at index")
     void testListSpecificRemoveMethods() {
         PersistentDoublyLinkedListFat<Integer> list =
-                emptyList.addFirst(1).addLast(2).addLast(3).addLast(4); // [1, 2, 3, 4]
+                emptyList.addFirstInternal(1).addLastInternal(2).addLastInternal(3).addLastInternal(4); // [1, 2, 3, 4]
 
-        list = list.removeFirst(); // [2, 3, 4]
+        list = list.removeFirstInternal(); // [2, 3, 4]
         assertEquals(3, list.size());
         assertEquals(Integer.valueOf(2), list.get(0));
         assertFalse(list.containsElement(1));
 
-        list = list.removeLast(); // [2, 3]
+        list = list.removeLastInternal(); // [2, 3]
         assertEquals(2, list.size());
         assertEquals(Integer.valueOf(3), list.get(1));
         assertFalse(list.containsElement(4));
 
-        list = list.remove(0); // [3]
+        list = list.removeInternal(0); // [3]
         assertEquals(1, list.size());
         assertEquals(Integer.valueOf(3), list.get(0));
 
-        list = list.remove(0); // []
+        list = list.removeInternal(0); // []
         assertTrue(list.isEmpty());
     }
 
     @Test
     @DisplayName("Add at invalid index throws exception")
     void testAddInvalidIndex() {
-        assertThrows(IndexOutOfBoundsException.class, () -> emptyList.add(-1, 1));
-        assertThrows(IndexOutOfBoundsException.class, () -> emptyList.add(1, 1));
+        assertThrows(IndexOutOfBoundsException.class, () -> emptyList.addInternal(-1, 1));
+        assertThrows(IndexOutOfBoundsException.class, () -> emptyList.addInternal(1, 1));
         assertThrows(IndexOutOfBoundsException.class,
-                () -> listWithElements.add(-1, 1));
+                () -> listWithElements.addInternal(-1, 1));
         assertThrows(IndexOutOfBoundsException.class,
-                () -> listWithElements.add(4, 1));
+                () -> listWithElements.addInternal(4, 1));
     }
 
     @Test
@@ -305,19 +322,19 @@ class PersistentDoublyLinkedListFatFatTest {
     @Test
     @DisplayName("Remove at invalid index throws exception")
     void testRemoveInvalidIndex() {
-        assertThrows(IndexOutOfBoundsException.class, () -> emptyList.remove(0));
-        assertThrows(IndexOutOfBoundsException.class, () -> emptyList.remove(-1));
+        assertThrows(IndexOutOfBoundsException.class, () -> emptyList.removeInternal(0));
+        assertThrows(IndexOutOfBoundsException.class, () -> emptyList.removeInternal(-1));
         assertThrows(IndexOutOfBoundsException.class,
-                () -> listWithElements.remove(-1));
+                () -> listWithElements.removeInternal(-1));
         assertThrows(IndexOutOfBoundsException.class,
-                () -> listWithElements.remove(3));
+                () -> listWithElements.removeInternal(3));
     }
 
     @Test
     @DisplayName("Remove from empty list throws exception")
     void testRemoveFromEmptyList() {
-        assertThrows(IndexOutOfBoundsException.class, () -> emptyList.removeFirst());
-        assertThrows(IndexOutOfBoundsException.class, () -> emptyList.removeLast());
+        assertThrows(IndexOutOfBoundsException.class, () -> emptyList.removeFirstInternal());
+        assertThrows(IndexOutOfBoundsException.class, () -> emptyList.removeLastInternal());
     }
 
     @Test
@@ -358,11 +375,11 @@ class PersistentDoublyLinkedListFatFatTest {
         PersistentDoublyLinkedListFat<Integer> list = emptyList;
 
         // Build list: [5, 1, 3, 2, 4]
-        list = list.addFirst(3);
-        list = list.addFirst(1);
-        list = list.addLast(4);
-        list = list.add(1, 2);
-        list = list.addFirst(5);
+        list = list.addFirstInternal(3);
+        list = list.addFirstInternal(1);
+        list = list.addLastInternal(4);
+        list = list.addInternal(1, 2);
+        list = list.addFirstInternal(5);
 
         assertEquals(5, list.size());
         assertEquals(Integer.valueOf(5), list.get(0));
@@ -372,8 +389,8 @@ class PersistentDoublyLinkedListFatFatTest {
         assertEquals(Integer.valueOf(4), list.get(4));
 
         // Remove elements: [1, 2, 4]
-        list = list.removeFirst(); // Remove 5: [1, 2, 3, 4]
-        list = list.remove(2); // Remove 3: [1, 2, 4]
+        list = list.removeFirstInternal(); // Remove 5: [1, 2, 3, 4]
+        list = list.removeInternal(2); // Remove 3: [1, 2, 4]
 
         assertEquals(3, list.size());
         assertFalse(list.containsElement(5));
@@ -385,6 +402,83 @@ class PersistentDoublyLinkedListFatFatTest {
         // Convert to array
         Integer[] array = list.toArray(new Integer[0]);
         assertArrayEquals(new Integer[] {1, 2, 4}, array);
+    }
+
+    @Test
+    @DisplayName("Test indexOf and lastIndexOf")
+    void testIndexOf() {
+        PersistentDoublyLinkedListFat<Integer> list = 
+            emptyList.addFirstInternal(1).addLastInternal(2).addLastInternal(3).addLastInternal(2).addLastInternal(1);
+        
+        assertEquals(0, list.indexOf(1));
+        assertEquals(1, list.indexOf(2));
+        assertEquals(2, list.indexOf(3));
+        assertEquals(-1, list.indexOf(4));
+        
+        assertEquals(4, list.lastIndexOf(1));
+        assertEquals(3, list.lastIndexOf(2));
+        assertEquals(2, list.lastIndexOf(3));
+        assertEquals(-1, list.lastIndexOf(4));
+    }
+
+    @Test
+    @DisplayName("Test ListIterator")
+    void testListIterator() {
+        ListIterator<Integer> iterator = listWithElements.listIterator();
+        
+        assertTrue(iterator.hasNext());
+        assertFalse(iterator.hasPrevious());
+        assertEquals(0, iterator.nextIndex());
+        assertEquals(-1, iterator.previousIndex());
+        
+        assertEquals(Integer.valueOf(1), iterator.next());
+        assertEquals(1, iterator.nextIndex());
+        assertEquals(0, iterator.previousIndex());
+        assertTrue(iterator.hasPrevious());
+        
+        assertEquals(Integer.valueOf(2), iterator.next());
+        assertEquals(Integer.valueOf(3), iterator.next());
+        assertFalse(iterator.hasNext());
+    }
+
+    @Test
+    @DisplayName("Test ListIterator with index")
+    void testListIteratorWithIndex() {
+        ListIterator<Integer> iterator = listWithElements.listIterator(1);
+        
+        assertTrue(iterator.hasNext());
+        assertEquals(1, iterator.nextIndex());
+        assertEquals(0, iterator.previousIndex());
+        
+        assertEquals(Integer.valueOf(2), iterator.next());
+        assertEquals(Integer.valueOf(3), iterator.next());
+        assertFalse(iterator.hasNext());
+    }
+
+    @Test
+    @DisplayName("Test subList")
+    void testSubList() {
+        PersistentDoublyLinkedListFat<Integer> list = 
+            emptyList.addFirstInternal(1).addLastInternal(2).addLastInternal(3).addLastInternal(4).addLastInternal(5);
+        
+        List<Integer> subList = list.subList(1, 4);
+        assertEquals(3, subList.size());
+        assertEquals(List.of(2, 3, 4), subList);
+        
+        // Empty sublist
+        List<Integer> emptySubList = list.subList(2, 2);
+        assertTrue(emptySubList.isEmpty());
+    }
+
+    @Test
+    @DisplayName("Test subList invalid indices")
+    void testSubListInvalidIndices() {
+        PersistentDoublyLinkedListFat<Integer> list = 
+            emptyList.addFirstInternal(1).addLastInternal(2).addLastInternal(3);
+        
+        assertThrows(IndexOutOfBoundsException.class, () -> list.subList(-1, 2));
+        assertThrows(IndexOutOfBoundsException.class, () -> list.subList(0, 4));
+        assertThrows(IndexOutOfBoundsException.class, () -> list.subList(2, 1));
     }
 
     @ParameterizedTest

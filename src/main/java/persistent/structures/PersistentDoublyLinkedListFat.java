@@ -2,6 +2,8 @@ package persistent.structures;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
+import java.util.ListIterator;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import persistent.core.PersistentStructure;
@@ -18,7 +20,7 @@ import persistent.core.Version;
  */
 @SuppressWarnings({"LineLength", "LongLine", "MaxLineLength", "HiddenField"})
 public final class PersistentDoublyLinkedListFat<E extends Comparable<E>>
-        implements PersistentStructure<E> {
+        implements PersistentStructure<E>, List<E> {
 
     /**
      * Version-tagged reference stored inside a fat-node.
@@ -165,9 +167,11 @@ public final class PersistentDoublyLinkedListFat<E extends Comparable<E>>
         return new PersistentDoublyLinkedListFat<>(head, tail, size, versionId + 1);
     }
 
+    // ========== PersistentStructure interface implementations ==========
+
     @Override
     public PersistentStructure<E> createWithAdded(final E element) {
-        return add(size, element);
+        return addInternal(size, element);
     }
 
     @Override
@@ -177,7 +181,7 @@ public final class PersistentDoublyLinkedListFat<E extends Comparable<E>>
 
         while (current != null) {
             if (Objects.equals(current.getValue(), element)) {
-                return remove(index);
+                return removeInternal(index);
             }
             current = getNext(current);
             index++;
@@ -214,14 +218,16 @@ public final class PersistentDoublyLinkedListFat<E extends Comparable<E>>
     }
 
     @Override
-    public boolean add(final E e) {
-        throw new UnsupportedOperationException();
+    public int size() {
+        return size;
     }
 
     @Override
-    public boolean remove(final Object o) {
-        throw new UnsupportedOperationException();
+    public boolean isEmpty() {
+        return size == 0;
     }
+
+    // ========== List interface methods (immutable ones) ==========
 
     @Override
     @SuppressWarnings("unchecked")
@@ -231,16 +237,6 @@ public final class PersistentDoublyLinkedListFat<E extends Comparable<E>>
         } catch (ClassCastException e) {
             return false;
         }
-    }
-
-    @Override
-    public int size() {
-        return size;
-    }
-
-    @Override
-    public boolean isEmpty() {
-        return size == 0;
     }
 
     @Override
@@ -309,72 +305,324 @@ public final class PersistentDoublyLinkedListFat<E extends Comparable<E>>
     }
 
     @Override
-    public boolean addAll(final Collection<? extends E> c) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public boolean removeAll(final Collection<?> c) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public boolean retainAll(final Collection<?> c) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void clear() {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * Returns the list element at a given index.
-     *
-     * @param index position of element
-     * @return element value
-     */
     public E get(final int index) {
         checkIndex(index);
         return nodeAt(index).getValue();
     }
 
+    @Override
+    public int indexOf(final Object o) {
+        try {
+            @SuppressWarnings("unchecked")
+            E element = (E) o;
+            Node<E> current = head;
+            int index = 0;
+            while (current != null) {
+                if (Objects.equals(current.getValue(), element)) {
+                    return index;
+                }
+                current = getNext(current);
+                index++;
+            }
+            return -1;
+        } catch (ClassCastException e) {
+            return -1;
+        }
+    }
+
+    @Override
+    public int lastIndexOf(final Object o) {
+        try {
+            @SuppressWarnings("unchecked")
+            E element = (E) o;
+            Node<E> current = tail;
+            int index = size - 1;
+            while (current != null) {
+                if (Objects.equals(current.getValue(), element)) {
+                    return index;
+                }
+                current = getPrev(current);
+                index--;
+            }
+            return -1;
+        } catch (ClassCastException e) {
+            return -1;
+        }
+    }
+
+    @Override
+    public ListIterator<E> listIterator() {
+        return listIterator(0);
+    }
+
+    @Override
+    public ListIterator<E> listIterator(final int index) {
+        checkIndexForIterator(index);
+        
+        return new ListIterator<E>() {
+            private Node<E> nextNode = (index == size) ? null : nodeAt(index);
+            private Node<E> lastReturned = null;
+            private int nextIndex = index;
+            
+            @Override
+            public boolean hasNext() {
+                return nextIndex < size;
+            }
+            
+            @Override
+            public E next() {
+                if (!hasNext()) {
+                    throw new NoSuchElementException();
+                }
+                lastReturned = nextNode;
+                nextNode = getNext(nextNode);
+                nextIndex++;
+                return lastReturned.getValue();
+            }
+            
+            @Override
+            public boolean hasPrevious() {
+                return nextIndex > 0;
+            }
+            
+            @Override
+            public E previous() {
+                if (!hasPrevious()) {
+                    throw new NoSuchElementException();
+                }
+                nextNode = (nextNode == null) ? tail : getPrev(nextNode);
+                lastReturned = nextNode;
+                nextIndex--;
+                return lastReturned.getValue();
+            }
+            
+            @Override
+            public int nextIndex() {
+                return nextIndex;
+            }
+            
+            @Override
+            public int previousIndex() {
+                return nextIndex - 1;
+            }
+            
+            @Override
+            public void remove() {
+                throw new UnsupportedOperationException(
+                    "PersistentDoublyLinkedListFat is immutable");
+            }
+            
+            @Override
+            public void set(final E e) {
+                throw new UnsupportedOperationException(
+                    "PersistentDoublyLinkedListFat is immutable");
+            }
+            
+            @Override
+            public void add(final E e) {
+                throw new UnsupportedOperationException(
+                    "PersistentDoublyLinkedListFat is immutable");
+            }
+        };
+    }
+
+    @Override
+    public List<E> subList(final int fromIndex, final int toIndex) {
+        if (fromIndex < 0 || toIndex > size || fromIndex > toIndex) {
+            throw new IndexOutOfBoundsException();
+        }
+        
+        if (fromIndex == toIndex) {
+            return new PersistentDoublyLinkedListFat<>();
+        }
+        
+        PersistentDoublyLinkedListFat<E> result = new PersistentDoublyLinkedListFat<>();
+        Node<E> current = nodeAt(fromIndex);
+        for (int i = fromIndex; i < toIndex; i++) {
+            result = result.addLastInternal(current.getValue());
+            current = getNext(current);
+        }
+        
+        return result;
+    }
+
+    @Override
+    public boolean equals(final Object obj) {
+        if (this == obj) {
+            return true;
+        }
+
+        if (!(obj instanceof List)) {
+            return false;
+        }
+
+        List<?> other = (List<?>) obj;
+        if (size != other.size()) {
+            return false;
+        }
+
+        Iterator<E> it1 = iterator();
+        Iterator<?> it2 = other.iterator();
+
+        while (it1.hasNext() && it2.hasNext()) {
+            if (!Objects.equals(it1.next(), it2.next())) {
+                return false;
+            }
+        }
+
+        return !it1.hasNext() && !it2.hasNext();
+    }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+
+        for (E element : this) {
+            result = prime * result + (element == null ? 0 : element.hashCode());
+        }
+
+        return result;
+    }
+
+    // ========== Mutable List interface methods (throw UnsupportedOperationException) ==========
+
+    @Override
+    public boolean add(final E e) {
+        throw new UnsupportedOperationException(
+            "PersistentDoublyLinkedListFat is immutable. Use "
+                + "TransactionalPersistentDoublyLinkedListFat for mutable operations.");
+    }
+
+    @Override
+    public boolean remove(final Object o) {
+        throw new UnsupportedOperationException(
+            "PersistentDoublyLinkedListFat is immutable. Use "
+                + "TransactionalPersistentDoublyLinkedListFat for mutable operations.");
+    }
+
+    @Override
+    public boolean addAll(final Collection<? extends E> c) {
+        throw new UnsupportedOperationException(
+            "PersistentDoublyLinkedListFat is immutable. Use "
+                + "TransactionalPersistentDoublyLinkedListFat for mutable operations.");
+    }
+
+    @Override
+    public boolean addAll(final int index, final Collection<? extends E> c) {
+        throw new UnsupportedOperationException(
+            "PersistentDoublyLinkedListFat is immutable. Use "
+                + "TransactionalPersistentDoublyLinkedListFat for mutable operations.");
+    }
+
+    @Override
+    public boolean removeAll(final Collection<?> c) {
+        throw new UnsupportedOperationException(
+            "PersistentDoublyLinkedListFat is immutable. Use "
+                + "TransactionalPersistentDoublyLinkedListFat for mutable operations.");
+    }
+
+    @Override
+    public boolean retainAll(final Collection<?> c) {
+        throw new UnsupportedOperationException(
+            "PersistentDoublyLinkedListFat is immutable. Use "
+                + "TransactionalPersistentDoublyLinkedListFat for mutable operations.");
+    }
+
+    @Override
+    public void clear() {
+        throw new UnsupportedOperationException(
+            "PersistentDoublyLinkedListFat is immutable. Use "
+                + "TransactionalPersistentDoublyLinkedListFat for mutable operations.");
+    }
+
+    @Override
+    public E set(final int index, final E element) {
+        throw new UnsupportedOperationException(
+            "PersistentDoublyLinkedListFat is immutable. Use "
+                + "TransactionalPersistentDoublyLinkedListFat for mutable operations.");
+    }
+
+    @Override
+    public void add(final int index, final E element) {
+        throw new UnsupportedOperationException(
+            "PersistentDoublyLinkedListFat is immutable. Use "
+                + "TransactionalPersistentDoublyLinkedListFat for mutable operations.");
+    }
+
+    @Override
+    public E remove(final int index) {
+        throw new UnsupportedOperationException(
+            "PersistentDoublyLinkedListFat is immutable. Use "
+                + "TransactionalPersistentDoublyLinkedListFat for mutable operations.");
+    }
+
+    @Override
+    public void addFirst(final E e) {
+        throw new UnsupportedOperationException(
+            "PersistentDoublyLinkedListFat is immutable. Use "
+                + "TransactionalPersistentDoublyLinkedListFat for mutable operations.");
+    }
+
+    @Override
+    public void addLast(final E e) {
+        throw new UnsupportedOperationException(
+            "PersistentDoublyLinkedListFat is immutable. Use "
+                + "TransactionalPersistentDoublyLinkedListFat for mutable operations.");
+    }
+
+    @Override
+    public E removeFirst() {
+        throw new UnsupportedOperationException(
+            "PersistentDoublyLinkedListFat is immutable. Use "
+                + "TransactionalPersistentDoublyLinkedListFat for mutable operations.");
+    }
+
+    @Override
+    public E removeLast() {
+        throw new UnsupportedOperationException(
+            "PersistentDoublyLinkedListFat is immutable. Use "
+                + "TransactionalPersistentDoublyLinkedListFat for mutable operations.");
+    }
+
+    // ========== Persistent list-specific methods ==========
+
     /**
-     * Put the element in the beginning.
+     * Put the element in the beginning (persistent version).
      *
      * @param value  element to put
      * @return new list version.
      */
-    public PersistentDoublyLinkedListFat<E> addFirst(final E value) {
-        return add(0, value);
+    public PersistentDoublyLinkedListFat<E> addFirstInternal(final E value) {
+        return addInternal(0, value);
     }
 
     /**
-     * Put the element in the end.
+     * Put the element in the end (persistent version).
      *
      * @param value element to put
      * @return new list version.
      */
-    public PersistentDoublyLinkedListFat<E> addLast(final E value) {
-        return add(size, value);
+    public PersistentDoublyLinkedListFat<E> addLastInternal(final E value) {
+        return addInternal(size, value);
     }
 
     /**
-     * Remove the element in the beginning.
+     * Remove the element in the beginning (persistent version).
      *
      * @return new list version.
      */
-    public PersistentDoublyLinkedListFat<E> removeFirst() {
-        return remove(0);
+    public PersistentDoublyLinkedListFat<E> removeFirstInternal() {
+        return removeInternal(0);
     }
 
     /**
-     * Remove the element in the end.
+     * Remove the element in the end (persistent version).
      *
      * @return new list version.
      */
-    public PersistentDoublyLinkedListFat<E> removeLast() {
-        return remove(size - 1);
+    public PersistentDoublyLinkedListFat<E> removeLastInternal() {
+        return removeInternal(size - 1);
     }
 
     /**
@@ -384,7 +632,7 @@ public final class PersistentDoublyLinkedListFat<E extends Comparable<E>>
      * @param index where to put
      * @return new list version.
      */
-    public PersistentDoublyLinkedListFat<E> add(
+    public PersistentDoublyLinkedListFat<E> addInternal(
             final int index,
             final E value) {
 
@@ -431,7 +679,7 @@ public final class PersistentDoublyLinkedListFat<E extends Comparable<E>>
      * @param index what to remove
      * @return new list version.
      */
-    public PersistentDoublyLinkedListFat<E> remove(final int index) {
+    public PersistentDoublyLinkedListFat<E> removeInternal(final int index) {
         checkIndex(index);
 
         PersistentDoublyLinkedListFat<E> newVersion = fork();
@@ -461,6 +709,8 @@ public final class PersistentDoublyLinkedListFat<E extends Comparable<E>>
         return new PersistentDoublyLinkedListFat<>(
                 newVersion.head, newVersion.tail, size - 1, version);
     }
+
+    // ========== Helper methods ==========
 
     /**
      * Returns the node at a given index.
@@ -498,12 +748,27 @@ public final class PersistentDoublyLinkedListFat<E extends Comparable<E>>
     }
 
     /**
+     * Validates index for iterator creation.
+     *
+     * @param index index to validate
+     */
+    private void checkIndexForIterator(final int index) {
+        if (index < 0 || index > size) {
+            throw new IndexOutOfBoundsException(
+                "index: " + index + ", size: " + size);
+        }
+    }
+
+    /**
      * Returns next pointer for given node in current version.
      *
      * @param node the target node
      * @return new nnode
      */
     private Node<E> getNext(final Node<E> node) {
+        if (node == null) {
+            return null;
+        }
         VersionedRef<E> ref = node.getNextRef();
         return ref.getVersion() <= versionId ? ref.getValue() : null;
     }
@@ -515,6 +780,9 @@ public final class PersistentDoublyLinkedListFat<E extends Comparable<E>>
      * @return new node
      */
     private Node<E> getPrev(final Node<E> node) {
+        if (node == null) {
+            return null;
+        }
         VersionedRef<E> ref = node.getPrevRef();
         return ref.getVersion() <= versionId ? ref.getValue() : null;
     }
@@ -543,45 +811,6 @@ public final class PersistentDoublyLinkedListFat<E extends Comparable<E>>
                          final Node<E> prev,
                          final int version) {
         node.setPrevRef(new VersionedRef<>(prev, version));
-    }
-
-    @Override
-    public boolean equals(final Object obj) {
-        if (this == obj) {
-            return true;
-        }
-
-        if (!(obj instanceof Collection<?>)) {
-            return false;
-        }
-
-        Collection<?> other = (Collection<?>) obj;
-        if (size != other.size()) {
-            return false;
-        }
-
-        Iterator<E> it1 = iterator();
-        Iterator<?> it2 = other.iterator();
-
-        while (it1.hasNext() && it2.hasNext()) {
-            if (!Objects.equals(it1.next(), it2.next())) {
-                return false;
-            }
-        }
-
-        return !it1.hasNext() && !it2.hasNext();
-    }
-
-    @Override
-    public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-
-        for (E element : this) {
-            result = prime * result + (element == null ? 0 : element.hashCode());
-        }
-
-        return result;
     }
 
     @Override

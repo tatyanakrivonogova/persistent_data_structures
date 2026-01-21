@@ -18,7 +18,7 @@ import persistent.core.Version;
  */
 @SuppressWarnings({"LineLength", "LongLine", "MaxLineLength"})
 public final class PersistentBinaryTreeSlow<T extends Comparable<T>>
-        implements PersistentStructure<T> {
+        implements PersistentStructure<T>, Collection<T> {
 
     /**
      * Mutable tree node for this implementation.

@@ -3,24 +3,26 @@ package persistent.structures;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.Set;
 import persistent.core.PersistentStructure;
 import persistent.core.SimpleVersion;
 import persistent.core.Version;
 
 /**
- * Persistent tree map that fully implements Collection interface.
- * Uses wrapper pattern for transactional updates.
+ * Persistent tree map that fully implements Map interface.
  *
  * @param <K> key type, must be Comparable
  * @param <V> value type
  */
 @SuppressWarnings({"HiddenField"})
 public final class PersistentTreeMapSlow<K extends Comparable<K>, V>
-        implements PersistentStructure<Map.Entry<K, V>> {
+        implements PersistentStructure<Map.Entry<K, V>>, Map<K, V> {
 
     /**
      * Immutable tree node.
@@ -72,13 +74,15 @@ public final class PersistentTreeMapSlow<K extends Comparable<K>, V>
         this.root = root;
     }
 
+    // ========== PersistentStructure interface implementations ==========
+
     @Override
     public PersistentStructure<Map.Entry<K, V>> createWithAdded(
             final Map.Entry<K, V> entry) {
         if (entry == null || entry.getKey() == null) {
             return this;
         }
-        return put(entry.getKey(), entry.getValue());
+        return putInternal(entry.getKey(), entry.getValue());
     }
 
     @Override
@@ -87,7 +91,7 @@ public final class PersistentTreeMapSlow<K extends Comparable<K>, V>
         if (entry == null || entry.getKey() == null) {
             return this;
         }
-        return remove(entry.getKey());
+        return removeInternal(entry.getKey());
     }
 
     @Override
@@ -100,7 +104,7 @@ public final class PersistentTreeMapSlow<K extends Comparable<K>, V>
         if (entry == null || entry.getKey() == null) {
             return false;
         }
-        V value = get(entry.getKey());
+        V value = getInternal(entry.getKey());
         return Objects.equals(value, entry.getValue());
     }
 
@@ -114,13 +118,138 @@ public final class PersistentTreeMapSlow<K extends Comparable<K>, V>
         return this;
     }
 
+    @Override
+    public int size() {
+        return size(root);
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return root == null;
+    }
+
+    // ========== Map interface methods (immutable ones) ==========
+
+    @Override
+    public boolean containsKey(final Object key) {
+        try {
+            @SuppressWarnings("unchecked")
+            K k = (K) key;
+            return getInternal(k) != null;
+        } catch (ClassCastException e) {
+            return false;
+        }
+    }
+
+    @Override
+    public boolean containsValue(final Object value) {
+        try {
+            @SuppressWarnings("unchecked")
+            V v = (V) value;
+            return containsValue(root, v);
+        } catch (ClassCastException e) {
+            return false;
+        }
+    }
+
+    @Override
+    public V get(final Object key) {
+        try {
+            @SuppressWarnings("unchecked")
+            K k = (K) key;
+            return getInternal(k);
+        } catch (ClassCastException e) {
+            return null;
+        }
+    }
+
+    @Override
+    public Set<Map.Entry<K, V>> entrySet() {
+        return new EntrySet();
+    }
+
+    @Override
+    public Set<K> keySet() {
+        return new KeySet();
+    }
+
+    @Override
+    public Collection<V> values() {
+        return new Values();
+    }
+
+    @Override
+    public void putAll(final Map<? extends K, ? extends V> m) {
+        throw new UnsupportedOperationException(
+            "PersistentTreeMapSlow is immutable. Use "
+                + "TransactionalPersistentTreeMapSlow for mutable operations.");
+    }
+
+    // ========== Map interface methods (throw UnsupportedOperationException) ==========
+
+    @Override
+    public V put(final K key, final V value) {
+        throw new UnsupportedOperationException(
+            "PersistentTreeMapSlow is immutable. Use "
+                + "TransactionalPersistentTreeMapSlow for mutable operations.");
+    }
+
+    @Override
+    public V remove(final Object key) {
+        throw new UnsupportedOperationException(
+            "PersistentTreeMapSlow is immutable. Use "
+                + "TransactionalPersistentTreeMapSlow for mutable operations.");
+    }
+
+    @Override
+    public void clear() {
+        throw new UnsupportedOperationException(
+            "PersistentTreeMapSlow is immutable. Use "
+                + "TransactionalPersistentTreeMapSlow for mutable operations.");
+    }
+
+    // ========== Persistent map-specific methods ==========
+
+    /**
+     * Associates the specified value with the specified key (persistent version).
+     *
+     * @param key the key
+     * @param value the value
+     * @return new map version with the key-value pair added or updated
+     */
+    public PersistentTreeMapSlow<K, V> putInternal(final K key, final V value) {
+        if (key == null) {
+            return this;
+        }
+        V oldValue = getInternal(key);
+        if (Objects.equals(oldValue, value)) {
+            return this;
+        }
+        Node<K, V> newRoot = putCopy(root, key, value);
+        return new PersistentTreeMapSlow<>(newRoot);
+    }
+
+    /**
+     * Removes the mapping for the specified key (persistent version).
+     *
+     * @param key the key to remove
+     * @return new map version with the key removed
+     */
+    public PersistentTreeMapSlow<K, V> removeInternal(final K key) {
+        if (!containsKey(key)) {
+            return this;
+        }
+        Node<K, V> newRoot = removeCopy(root, key);
+        return new PersistentTreeMapSlow<>(newRoot);
+    }
+
     /**
      * Returns the value to which the specified key is mapped.
      *
      * @param key the key
      * @return the value associated with the key, or null if not found
      */
-    public V get(final K key) {
+    public V getInternal(final K key) {
         if (key == null) {
             return null;
         }
@@ -138,63 +267,7 @@ public final class PersistentTreeMapSlow<K extends Comparable<K>, V>
         return null;
     }
 
-    /**
-     * Returns true if this map contains the specified key.
-     *
-     * @param key the key
-     * @return true if the map contains the key
-     */
-    public boolean containsKey(final K key) {
-        return get(key) != null;
-    }
-
-    /**
-     * Returns true if this map contains the specified value.
-     *
-     * @param value the value
-     * @return true if the map contains the value
-     */
-    public boolean containsValue(final V value) {
-        return containsValue(root, value);
-    }
-
-    /**
-     * Returns true if this node contains the specified value.
-     *
-     * @param value the value
-     * @param node node to look in
-     * @return true if the map contains the value
-     */
-    private boolean containsValue(final Node<K, V> node,
-                                  final V value) {
-        if (node == null) {
-            return false;
-        }
-        if (Objects.equals(node.value, value)) {
-            return true;
-        }
-        return containsValue(node.left, value)
-                || containsValue(node.right, value);
-    }
-
-    /**
-     * Associates the specified value with the specified key.
-     *
-     * @param key the key
-     * @param value the value
-     * @return new map version with the key-value pair added or updated
-     */
-    public PersistentTreeMapSlow<K, V> put(final K key, final V value) {
-        if (key == null) {
-            return this;
-        }
-        V oldValue = get(key);
-        if (Objects.equals(oldValue, value)) {
-            return this;
-        }
-        Node<K, V> newRoot = putCopy(root, key, value);
-        return new PersistentTreeMapSlow<>(newRoot);
-    }
+    // ========== Tree operations ==========
 
     /**
      * Method for internal use.
@@ -220,20 +293,6 @@ public final class PersistentTreeMapSlow<K extends Comparable<K>, V>
                     node.left, putCopy(node.right, key, value));
         }
         return new Node<>(key, value, node.left, node.right);
-    }
-
-    /**
-     * Removes the mapping for the specified key.
-     *
-     * @param key the key to remove
-     * @return new map version with the key removed
-     */
-    public PersistentTreeMapSlow<K, V> remove(final K key) {
-        if (!containsKey(key)) {
-            return this;
-        }
-        Node<K, V> newRoot = removeCopy(root, key);
-        return new PersistentTreeMapSlow<>(newRoot);
     }
 
     /**
@@ -268,6 +327,25 @@ public final class PersistentTreeMapSlow<K extends Comparable<K>, V>
         return new Node<>(min.key, min.value, node.left, newRight);
     }
 
+    /**
+     * Returns true if this node contains the specified value.
+     *
+     * @param value the value
+     * @param node node to look in
+     * @return true if the map contains the value
+     */
+    private boolean containsValue(final Node<K, V> node,
+                                  final V value) {
+        if (node == null) {
+            return false;
+        }
+        if (Objects.equals(node.value, value)) {
+            return true;
+        }
+        return containsValue(node.left, value)
+                || containsValue(node.right, value);
+    }
+
     private Node<K, V> findMin(final Node<K, V> node) {
         Node<K, V> currentNode = node;
         while (currentNode.left != null) {
@@ -284,11 +362,386 @@ public final class PersistentTreeMapSlow<K extends Comparable<K>, V>
                 deleteMinCopy(node.left), node.right);
     }
 
-    @Override
-    public Iterator<Map.Entry<K, V>> iterator() {
-        List<Map.Entry<K, V>> out = new ArrayList<>();
-        inorder(root, out);
-        return out.iterator();
+    private int size(final Node<K, V> node) {
+        if (node == null) {
+            return 0;
+        }
+        return 1 + size(node.left) + size(node.right);
+    }
+
+    // ========== EntrySet, KeySet, and Values implementations ==========
+
+    private final class EntrySet implements Set<Map.Entry<K, V>> {
+        @Override
+        public int size() {
+            return PersistentTreeMapSlow.this.size();
+        }
+
+        @Override
+        public boolean isEmpty() {
+            return PersistentTreeMapSlow.this.isEmpty();
+        }
+
+        @Override
+        public boolean contains(final Object o) {
+            if (!(o instanceof Map.Entry)) {
+                return false;
+            }
+            Map.Entry<?, ?> entry = (Map.Entry<?, ?>) o;
+            V value = PersistentTreeMapSlow.this.get(entry.getKey());
+            return Objects.equals(value, entry.getValue());
+        }
+
+        @Override
+        public Iterator<Map.Entry<K, V>> iterator() {
+            return new EntryIterator();
+        }
+
+        @Override
+        public Object[] toArray() {
+            List<Map.Entry<K, V>> list = new ArrayList<>();
+            for (Map.Entry<K, V> entry : this) {
+                list.add(entry);
+            }
+            return list.toArray();
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        public <T> T[] toArray(final T[] a) {
+            List<Map.Entry<K, V>> list = new ArrayList<>();
+            for (Map.Entry<K, V> entry : this) {
+                list.add(entry);
+            }
+            return list.toArray(a);
+        }
+
+        @Override
+        public boolean add(final Map.Entry<K, V> e) {
+            throw new UnsupportedOperationException(
+                "PersistentTreeMapSlow is immutable");
+        }
+
+        @Override
+        public boolean remove(final Object o) {
+            throw new UnsupportedOperationException(
+                "PersistentTreeMapSlow is immutable");
+        }
+
+        @Override
+        public boolean containsAll(final Collection<?> c) {
+            for (Object o : c) {
+                if (!contains(o)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        @Override
+        public boolean addAll(
+            final Collection<? extends Map.Entry<K, V>> c) {
+            throw new UnsupportedOperationException(
+                "PersistentTreeMapSlow is immutable");
+        }
+
+        @Override
+        public boolean retainAll(final Collection<?> c) {
+            throw new UnsupportedOperationException(
+                "PersistentTreeMapSlow is immutable");
+        }
+
+        @Override
+        public boolean removeAll(final Collection<?> c) {
+            throw new UnsupportedOperationException(
+                "PersistentTreeMapSlow is immutable");
+        }
+
+        @Override
+        public void clear() {
+            throw new UnsupportedOperationException(
+                "PersistentTreeMapSlow is immutable");
+        }
+
+        @Override
+        public boolean equals(final Object o) {
+            if (o == this) {
+                return true;
+            }
+            if (!(o instanceof Set)) {
+                return false;
+            }
+            Set<?> that = (Set<?>) o;
+            if (size() != that.size()) {
+                return false;
+            }
+            return containsAll(that);
+        }
+
+        @Override
+        public int hashCode() {
+            int h = 0;
+            for (Map.Entry<K, V> entry : this) {
+                h += entry.hashCode();
+            }
+            return h;
+        }
+    }
+
+    private final class KeySet implements Set<K> {
+        @Override
+        public int size() {
+            return PersistentTreeMapSlow.this.size();
+        }
+
+        @Override
+        public boolean isEmpty() {
+            return PersistentTreeMapSlow.this.isEmpty();
+        }
+
+        @Override
+        public boolean contains(final Object o) {
+            return PersistentTreeMapSlow.this.containsKey(o);
+        }
+
+        @Override
+        public Iterator<K> iterator() {
+            return new KeyIterator();
+        }
+
+        @Override
+        public Object[] toArray() {
+            List<K> list = new ArrayList<>();
+            for (K key : this) {
+                list.add(key);
+            }
+            return list.toArray();
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        public <T> T[] toArray(final T[] a) {
+            List<K> list = new ArrayList<>();
+            for (K key : this) {
+                list.add(key);
+            }
+            return list.toArray(a);
+        }
+
+        @Override
+        public boolean add(final K e) {
+            throw new UnsupportedOperationException(
+                "PersistentTreeMapSlow is immutable");
+        }
+
+        @Override
+        public boolean remove(final Object o) {
+            throw new UnsupportedOperationException(
+                "PersistentTreeMapSlow is immutable");
+        }
+
+        @Override
+        public boolean containsAll(final Collection<?> c) {
+            for (Object o : c) {
+                if (!contains(o)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        @Override
+        public boolean addAll(final Collection<? extends K> c) {
+            throw new UnsupportedOperationException(
+                "PersistentTreeMapSlow is immutable");
+        }
+
+        @Override
+        public boolean retainAll(final Collection<?> c) {
+            throw new UnsupportedOperationException(
+                "PersistentTreeMapSlow is immutable");
+        }
+
+        @Override
+        public boolean removeAll(final Collection<?> c) {
+            throw new UnsupportedOperationException(
+                "PersistentTreeMapSlow is immutable");
+        }
+
+        @Override
+        public void clear() {
+            throw new UnsupportedOperationException(
+                "PersistentTreeMapSlow is immutable");
+        }
+
+        @Override
+        public boolean equals(final Object o) {
+            if (o == this) {
+                return true;
+            }
+            if (!(o instanceof Set)) {
+                return false;
+            }
+            Set<?> that = (Set<?>) o;
+            if (size() != that.size()) {
+                return false;
+            }
+            return containsAll(that);
+        }
+
+        @Override
+        public int hashCode() {
+            int h = 0;
+            for (K key : this) {
+                h += key.hashCode();
+            }
+            return h;
+        }
+    }
+
+    private final class Values implements Collection<V> {
+        @Override
+        public int size() {
+            return PersistentTreeMapSlow.this.size();
+        }
+
+        @Override
+        public boolean isEmpty() {
+            return PersistentTreeMapSlow.this.isEmpty();
+        }
+
+        @Override
+        public boolean contains(final Object o) {
+            return PersistentTreeMapSlow.this.containsValue(o);
+        }
+
+        @Override
+        public Iterator<V> iterator() {
+            return new ValueIterator();
+        }
+
+        @Override
+        public Object[] toArray() {
+            List<V> list = new ArrayList<>();
+            for (V value : this) {
+                list.add(value);
+            }
+            return list.toArray();
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        public <T> T[] toArray(final T[] a) {
+            List<V> list = new ArrayList<>();
+            for (V value : this) {
+                list.add(value);
+            }
+            return list.toArray(a);
+        }
+
+        @Override
+        public boolean add(final V e) {
+            throw new UnsupportedOperationException(
+                "PersistentTreeMapSlow is immutable");
+        }
+
+        @Override
+        public boolean remove(final Object o) {
+            throw new UnsupportedOperationException(
+                "PersistentTreeMapSlow is immutable");
+        }
+
+        @Override
+        public boolean containsAll(final Collection<?> c) {
+            for (Object o : c) {
+                if (!contains(o)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        @Override
+        public boolean addAll(final Collection<? extends V> c) {
+            throw new UnsupportedOperationException(
+                "PersistentTreeMapSlow is immutable");
+        }
+
+        @Override
+        public boolean removeAll(final Collection<?> c) {
+            throw new UnsupportedOperationException(
+                "PersistentTreeMapSlow is immutable");
+        }
+
+        @Override
+        public boolean retainAll(final Collection<?> c) {
+            throw new UnsupportedOperationException(
+                "PersistentTreeMapSlow is immutable");
+        }
+
+        @Override
+        public void clear() {
+            throw new UnsupportedOperationException(
+                "PersistentTreeMapSlow is immutable");
+        }
+    }
+
+    // ========== Iterators ==========
+
+    private abstract class TreeIterator<E> implements Iterator<E> {
+        /** The entries in order. */
+        protected final List<E> elements; // Изменено с private на protected
+        /** The current index in the iteration. */
+        private int currentIndex;
+
+        /** Creates a new iterator. */
+        TreeIterator() {
+        this.elements = new ArrayList<>();
+        fillElements();
+        this.currentIndex = 0;
+        }
+
+        abstract void fillElements();
+
+        @Override
+        public boolean hasNext() {
+        return currentIndex < elements.size();
+        }
+
+        @Override
+        public E next() {
+        if (!hasNext()) {
+            throw new NoSuchElementException();
+        }
+        return elements.get(currentIndex++);
+        }
+
+        @Override
+        public void remove() {
+        throw new UnsupportedOperationException(
+            "Persistent structures are immutable");
+        }
+    }
+
+    private final class EntryIterator extends TreeIterator<Map.Entry<K, V>> {
+        @Override
+        void fillElements() {
+        inorder(root, elements);
+        }
+    }
+
+    private final class KeyIterator extends TreeIterator<K> {
+        @Override
+        void fillElements() {
+        inorderKeys(root, elements);
+        }
+    }
+
+    private final class ValueIterator extends TreeIterator<V> {
+        @Override
+        void fillElements() {
+        inorderValues(root, elements);
+        }
     }
 
     private void inorder(final Node<K, V> node,
@@ -301,123 +754,64 @@ public final class PersistentTreeMapSlow<K extends Comparable<K>, V>
         inorder(node.right, out);
     }
 
-    @Override
-    public int size() {
-        return size(root);
-    }
-
-    private int size(final Node<K, V> node) {
+    private void inorderKeys(final Node<K, V> node,
+                             final List<K> out) {
         if (node == null) {
-            return 0;
+            return;
         }
-        return 1 + size(node.left) + size(node.right);
+        inorderKeys(node.left, out);
+        out.add(node.key);
+        inorderKeys(node.right, out);
     }
 
-    @Override
-    public boolean isEmpty() {
-        return root == null;
+    private void inorderValues(final Node<K, V> node,
+                               final List<V> out) {
+        if (node == null) {
+            return;
+        }
+        inorderValues(node.left, out);
+        out.add(node.value);
+        inorderValues(node.right, out);
     }
 
-    // Immutable
-    @Override
-    public boolean add(final Map.Entry<K, V> e) {
-        throw new UnsupportedOperationException();
-    }
+    // ========== Utility methods ==========
 
     @Override
-    public boolean remove(final Object o) {
-        throw new UnsupportedOperationException();
-    }
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof Map)) {
+            return false;
+        }
 
-    @Override
-    public boolean addAll(final Collection<? extends Map.Entry<K, V>> c) {
-        throw new UnsupportedOperationException();
-    }
+        Map<?, ?> that = (Map<?, ?>) o;
+        if (size() != that.size()) {
+            return false;
+        }
 
-    @Override
-    public boolean removeAll(final Collection<?> c) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public boolean retainAll(final Collection<?> c) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void clear() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public boolean containsAll(final Collection<?> c) {
-        for (Object o : c) {
-            if (!contains(o)) {
+        for (Map.Entry<K, V> entry : entrySet()) {
+            Object value = that.get(entry.getKey());
+            if (!Objects.equals(entry.getValue(), value)) {
                 return false;
             }
         }
+
         return true;
     }
 
     @Override
-    public boolean contains(final Object o) {
-        if (!(o instanceof Map.Entry<?, ?>)) {
-            return false;
-        }
-        Map.Entry<?, ?> e = (Map.Entry<?, ?>) o;
-        @SuppressWarnings("unchecked")
-        K key = (K) e.getKey();
-        @SuppressWarnings("unchecked")
-        V val = (V) e.getValue();
-        return Objects.equals(get(key), val);
-    }
-
-    @Override
-    public Object[] toArray() {
-        Object[] arr = new Object[size()];
-        int i = 0;
-        for (Map.Entry<K, V> e : this) {
-            arr[i++] = e;
-        }
-        return arr;
-    }
-
-    @Override
-    @SuppressWarnings("unchecked")
-    public <E> E[] toArray(final E[] a) {
-        List<Map.Entry<K, V>> list = new ArrayList<>();
-        for (Map.Entry<K, V> e : this) {
-            list.add(e);
-        }
-        if (a.length < list.size()) {
-            return list.toArray((E[]) java.lang.reflect.Array
-                    .newInstance(a.getClass()
-                            .getComponentType(), list.size()
-                    )
-            );
-        }
-        for (int i = 0; i < list.size(); i++) {
-            a[i] = (E) list.get(i);
-        }
-        if (a.length > list.size()) {
-            a[list.size()] = null;
-        }
-        return a;
-    }
-
-    @Override
     public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        for (Map.Entry<K, V> e : this) {
-            result = prime * result + (e == null ? 0 : e.hashCode());
+        int h = 0;
+        for (Map.Entry<K, V> entry : entrySet()) {
+            h += entry.hashCode();
         }
-        return result;
+        return h;
     }
 
     @Override
     public String toString() {
-        Iterator<Map.Entry<K, V>> it = iterator();
+        Iterator<Map.Entry<K, V>> it = entrySet().iterator();
         if (!it.hasNext()) {
             return "{}";
         }
@@ -431,27 +825,5 @@ public final class PersistentTreeMapSlow<K extends Comparable<K>, V>
             }
             sb.append(',').append(' ');
         }
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (!(o instanceof Collection<?>)) {
-            return false;
-        }
-        Collection<?> that = (Collection<?>) o;
-        if (size() != that.size()) {
-            return false;
-        }
-        Iterator<Map.Entry<K, V>> it1 = iterator();
-        Iterator<?> it2 = that.iterator();
-        while (it1.hasNext() && it2.hasNext()) {
-            if (!Objects.equals(it1.next(), it2.next())) {
-                return false;
-            }
-        }
-        return !it1.hasNext() && !it2.hasNext();
     }
 }

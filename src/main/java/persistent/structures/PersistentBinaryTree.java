@@ -17,7 +17,7 @@ import persistent.core.Version;
  * @param <T> the type of elements, must be Comparable
  */
 public final class PersistentBinaryTree<T extends Comparable<T>>
-    implements PersistentStructure<T> {
+    implements PersistentStructure<T>, Collection<T> {
 
   /**
    * Immutable tree node.
