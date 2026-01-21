@@ -302,7 +302,7 @@ class PersistentTreeMapTest {
     for (String key : map.keySet()) {
       keys.add(key);
     }
-    
+
     assertEquals(Arrays.asList("five", "four", "one", "three", "two"), keys);
   }
 
@@ -312,7 +312,7 @@ class PersistentTreeMapTest {
     for (Integer value : map.values()) {
       values.add(value);
     }
-    
+
     assertEquals(Arrays.asList(5, 4, 1, 3, 2), values);
   }
 
@@ -575,13 +575,13 @@ class PersistentTreeMapTest {
   void testSingleElementMap() {
     PersistentTreeMap<String, Integer> single = new PersistentTreeMap<>();
     single = single.putInternal("key", 42);
-    
+
     assertEquals(1, single.size());
     assertEquals(42, single.get("key"));
     assertTrue(single.containsKey("key"));
     assertTrue(single.containsValue(42));
     assertEquals("{key=42}", single.toString());
-    
+
     PersistentTreeMap<String, Integer> empty = single.removeInternal("key");
     assertTrue(empty.isEmpty());
   }

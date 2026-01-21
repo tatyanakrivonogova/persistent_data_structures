@@ -440,7 +440,7 @@ class PersistentTreeMapSlowTest {
         for (String key : map.keySet()) {
             keys.add(key);
         }
-        
+
         assertEquals(Arrays.asList("five", "four", "one", "three", "two"), keys);
     }
 
@@ -450,7 +450,7 @@ class PersistentTreeMapSlowTest {
         for (Integer value : map.values()) {
             values.add(value);
         }
-        
+
         assertEquals(Arrays.asList(5, 4, 1, 3, 2), values);
     }
 
@@ -627,17 +627,17 @@ class PersistentTreeMapSlowTest {
         // Test that creating multiple versions doesn't cause performance issues
         PersistentTreeMapSlow<Integer, Integer> base = new PersistentTreeMapSlow<>();
         List<PersistentTreeMapSlow<Integer, Integer>> versions = new ArrayList<>();
-        
+
         for (int i = 0; i < 100; i++) {
             base = base.putInternal(i, i * 10);
             versions.add(base);
         }
-        
+
         // Verify all versions are independent
         for (int i = 0; i < versions.size(); i++) {
             PersistentTreeMapSlow<Integer, Integer> version = versions.get(i);
             assertEquals(i + 1, version.size());
-            
+
             for (int j = 0; j <= i; j++) {
                 assertEquals(j * 10, version.get(j));
             }
@@ -757,13 +757,13 @@ class PersistentTreeMapSlowTest {
     void testSingleElementMap() {
         PersistentTreeMapSlow<String, Integer> single = new PersistentTreeMapSlow<>();
         single = single.putInternal("key", 42);
-        
+
         assertEquals(1, single.size());
         assertEquals(42, single.get("key"));
         assertTrue(single.containsKey("key"));
         assertTrue(single.containsValue(42));
         assertEquals("{key=42}", single.toString());
-        
+
         PersistentTreeMapSlow<String, Integer> empty = single.removeInternal("key");
         assertTrue(empty.isEmpty());
     }
@@ -781,7 +781,7 @@ class PersistentTreeMapSlowTest {
         PersistentTreeMapSlow<String, Integer> map1 = new PersistentTreeMapSlow<>();
         map1 = map1.putInternal("key", 1);
         map1 = map1.putInternal("key", 2); // Update
-        
+
         assertEquals(1, map1.size());
         assertEquals(2, map1.get("key"));
     }
@@ -789,7 +789,7 @@ class PersistentTreeMapSlowTest {
     @Test
     void testEntrySetOperations() {
         Set<Map.Entry<String, Integer>> entrySet = map.entrySet();
-        
+
         // Test equals
         Set<Map.Entry<String, Integer>> expectedSet = new HashSet<>();
         expectedSet.add(new AbstractMap.SimpleEntry<>("five", 5));
@@ -797,7 +797,7 @@ class PersistentTreeMapSlowTest {
         expectedSet.add(new AbstractMap.SimpleEntry<>("one", 1));
         expectedSet.add(new AbstractMap.SimpleEntry<>("three", 3));
         expectedSet.add(new AbstractMap.SimpleEntry<>("two", 2));
-        
+
         assertEquals(expectedSet, entrySet);
         assertEquals(entrySet.hashCode(), expectedSet.hashCode());
     }

@@ -557,24 +557,60 @@ public final class PersistentDoublyLinkedListFat<E extends Comparable<E>>
                 + "TransactionalPersistentDoublyLinkedListFat for mutable operations.");
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * This operation is not supported in the immutable version.
+     * Use {@link TransactionalPersistentDoublyLinkedListFat} for mutable operations.
+     *
+     * @throws UnsupportedOperationException always
+     */
+    @Override
     public void addFirst(final E e) {
         throw new UnsupportedOperationException(
             "PersistentDoublyLinkedListFat is immutable. Use "
                 + "TransactionalPersistentDoublyLinkedListFat for mutable operations.");
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * This operation is not supported in the immutable version.
+     * Use {@link TransactionalPersistentDoublyLinkedListFat} for mutable operations.
+     *
+     * @throws UnsupportedOperationException always
+     */
+    @Override
     public void addLast(final E e) {
         throw new UnsupportedOperationException(
             "PersistentDoublyLinkedListFat is immutable. Use "
                 + "TransactionalPersistentDoublyLinkedListFat for mutable operations.");
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * This operation is not supported in the immutable version.
+     * Use {@link TransactionalPersistentDoublyLinkedListFat} for mutable operations.
+     *
+     * @throws UnsupportedOperationException always
+     */
+    @Override
     public E removeFirst() {
         throw new UnsupportedOperationException(
             "PersistentDoublyLinkedListFat is immutable. Use "
                 + "TransactionalPersistentDoublyLinkedListFat for mutable operations.");
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * This operation is not supported in the immutable version.
+     * Use {@link TransactionalPersistentDoublyLinkedListFat} for mutable operations.
+     *
+     * @throws UnsupportedOperationException always
+     */
+    @Override
     public E removeLast() {
         throw new UnsupportedOperationException(
             "PersistentDoublyLinkedListFat is immutable. Use "

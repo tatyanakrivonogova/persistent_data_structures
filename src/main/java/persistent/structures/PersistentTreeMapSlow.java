@@ -19,7 +19,7 @@ import persistent.core.Version;
  * @param <K> key type, must be Comparable
  * @param <V> value type
  */
-@SuppressWarnings({"HiddenField"})
+@SuppressWarnings({"HiddenField", "LineLength"})
 public final class PersistentTreeMapSlow<K extends Comparable<K>, V>
         implements PersistentStructure<Map.Entry<K, V>>, Map<K, V> {
 

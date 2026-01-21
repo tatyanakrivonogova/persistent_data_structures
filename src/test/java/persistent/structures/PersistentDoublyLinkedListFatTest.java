@@ -457,7 +457,7 @@ class PersistentDoublyLinkedListFatTest {
     @Test
     @DisplayName("Test subList")
     void testSubList() {
-        PersistentDoublyLinkedListFat<Integer> list = 
+        PersistentDoublyLinkedListFat<Integer> list =
             emptyList.addFirstInternal(1).addLastInternal(2).addLastInternal(3).addLastInternal(4).addLastInternal(5);
 
         List<Integer> subList = list.subList(1, 4);

@@ -117,7 +117,7 @@ class TransactionalPersistentDoublyLinkedListFatTest {
     void testTransactionalAddAllWithIndex() {
         List<Integer> toAdd = Arrays.asList(4, 5);
         assertTrue(listWithElements.addAll(1, toAdd));
-        
+
         assertEquals(5, listWithElements.size());
         assertEquals(Integer.valueOf(1), listWithElements.get(0));
         assertEquals(Integer.valueOf(4), listWithElements.get(1));
@@ -153,7 +153,7 @@ class TransactionalPersistentDoublyLinkedListFatTest {
         assertEquals(Integer.valueOf(2), listWithElements.set(1, 20));
         assertEquals(Integer.valueOf(20), listWithElements.get(1));
         assertEquals(3, listWithElements.size());
-        
+
         assertThrows(IndexOutOfBoundsException.class, () -> listWithElements.set(-1, 0));
         assertThrows(IndexOutOfBoundsException.class, () -> listWithElements.set(3, 0));
     }
@@ -241,23 +241,23 @@ class TransactionalPersistentDoublyLinkedListFatTest {
     @DisplayName("Test ListIterator functionality")
     void testListIterator() {
         ListIterator<Integer> iterator = listWithElements.listIterator();
-        
+
         assertTrue(iterator.hasNext());
         assertFalse(iterator.hasPrevious());
         assertEquals(0, iterator.nextIndex());
         assertEquals(-1, iterator.previousIndex());
-        
+
         assertEquals(Integer.valueOf(1), iterator.next());
-        
+
         // Test set
         iterator.set(10);
         assertEquals(Integer.valueOf(10), listWithElements.get(0));
-        
+
         // Test add
         iterator.add(15);
         assertEquals(4, listWithElements.size());
         assertEquals(Integer.valueOf(15), listWithElements.get(1));
-        
+
         // Test remove
         iterator.next(); // Move to 2
         iterator.remove();
@@ -357,11 +357,11 @@ class TransactionalPersistentDoublyLinkedListFatTest {
     void testTransactionalSubList() {
         listWithElements.add(4);
         listWithElements.add(5);
-        
+
         List<Integer> subList = listWithElements.subList(1, 4);
         assertEquals(3, subList.size());
         assertEquals(List.of(2, 3, 4), subList);
-        
+
         // Sublist should be immutable
         assertThrows(UnsupportedOperationException.class, () -> subList.add(6));
     }
@@ -371,11 +371,11 @@ class TransactionalPersistentDoublyLinkedListFatTest {
     void testTransactionalIndexOf() {
         listWithElements.add(2);
         listWithElements.add(1);
-        
+
         assertEquals(0, listWithElements.indexOf(1));
         assertEquals(1, listWithElements.indexOf(2));
         assertEquals(2, listWithElements.indexOf(3));
-        
+
         assertEquals(4, listWithElements.lastIndexOf(1));
         assertEquals(3, listWithElements.lastIndexOf(2));
         assertEquals(2, listWithElements.lastIndexOf(3));
