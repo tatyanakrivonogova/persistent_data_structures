@@ -557,6 +557,30 @@ public final class PersistentDoublyLinkedListFat<E extends Comparable<E>>
                 + "TransactionalPersistentDoublyLinkedListFat for mutable operations.");
     }
 
+    public void addFirst(final E e) {
+        throw new UnsupportedOperationException(
+            "PersistentDoublyLinkedListFat is immutable. Use "
+                + "TransactionalPersistentDoublyLinkedListFat for mutable operations.");
+    }
+
+    public void addLast(final E e) {
+        throw new UnsupportedOperationException(
+            "PersistentDoublyLinkedListFat is immutable. Use "
+                + "TransactionalPersistentDoublyLinkedListFat for mutable operations.");
+    }
+
+    public E removeFirst() {
+        throw new UnsupportedOperationException(
+            "PersistentDoublyLinkedListFat is immutable. Use "
+                + "TransactionalPersistentDoublyLinkedListFat for mutable operations.");
+    }
+
+    public E removeLast() {
+        throw new UnsupportedOperationException(
+            "PersistentDoublyLinkedListFat is immutable. Use "
+                + "TransactionalPersistentDoublyLinkedListFat for mutable operations.");
+    }
+
     // ========== Persistent list-specific methods ==========
 
     /**

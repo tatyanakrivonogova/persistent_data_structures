@@ -264,6 +264,34 @@ public final class TransactionalPersistentDoublyLinkedList<E extends
     return currentRef.get().toArray(a);
   }
 
+  public void addFirst(final E e) {
+    modify(list -> list.addFirstInternal(e));
+  }
+
+  public void addLast(final E e) {
+    modify(list -> list.addLastInternal(e));
+  }
+
+  public E removeFirst() {
+    PersistentDoublyLinkedList<E> current = currentRef.get();
+    if (current.isEmpty()) {
+      throw new NoSuchElementException("removeFirst from empty list");
+    }
+    E first = current.get(0);
+    modify(list -> list.removeFirstInternal());
+    return first;
+  }
+
+  public E removeLast() {
+    PersistentDoublyLinkedList<E> current = currentRef.get();
+    if (current.isEmpty()) {
+      throw new NoSuchElementException("removeLast from empty list");
+    }
+    E last = current.get(current.size() - 1);
+    modify(list -> list.removeLastInternal());
+    return last;
+  }
+
   // ========== Transactional-specific methods ==========
 
   /**
