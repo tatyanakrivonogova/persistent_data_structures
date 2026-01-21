@@ -51,14 +51,14 @@ public interface PersistentStructure<T> {
    * @return true if the structure contains the element
    */
   boolean containsElement(T element);
-  
+
   /**
    * Returns the size of the structure.
    *
    * @return number of elements in the structure
    */
   int size();
-  
+
   /**
    * Checks if the structure is empty.
    *

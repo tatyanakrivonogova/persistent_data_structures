@@ -804,7 +804,7 @@ class PersistentTreeMapSlowTest {
 
     // ========== Helper Methods ==========
 
-    private void assertNotNull(Object obj) {
+    private void assertNotNull(final Object obj) {
         assertTrue(obj != null);
     }
 }

@@ -15,6 +15,7 @@ import persistent.core.Version;
  *
  * @param <E> element type
  */
+@SuppressWarnings({"LineLength"})
 public final class PersistentDoublyLinkedList<E extends Comparable<E>>
     implements PersistentStructure<E>, List<E> {
 

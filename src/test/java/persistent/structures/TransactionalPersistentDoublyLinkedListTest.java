@@ -153,8 +153,10 @@ class TransactionalListTest {
     assertEquals(Integer.valueOf(20), listWithElements.get(1));
     assertEquals(3, listWithElements.size());
     
-    assertThrows(IndexOutOfBoundsException.class, () -> listWithElements.set(-1, 0));
-    assertThrows(IndexOutOfBoundsException.class, () -> listWithElements.set(3, 0));
+    assertThrows(IndexOutOfBoundsException.class, () 
+      -> listWithElements.set(-1, 0));
+    assertThrows(IndexOutOfBoundsException.class, () 
+      -> listWithElements.set(3, 0));
   }
 
   @Test

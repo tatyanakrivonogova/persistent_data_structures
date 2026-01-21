@@ -3,7 +3,6 @@ package persistent.structures;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -690,7 +689,7 @@ public final class PersistentTreeMapSlow<K extends Comparable<K>, V>
 
     private abstract class TreeIterator<E> implements Iterator<E> {
         /** The entries in order. */
-        protected final List<E> elements; // Изменено с private на protected
+        private final List<E> elements;
         /** The current index in the iteration. */
         private int currentIndex;
 
@@ -702,6 +701,10 @@ public final class PersistentTreeMapSlow<K extends Comparable<K>, V>
         }
 
         abstract void fillElements();
+
+        protected List<E> getElements() {
+            return elements;
+        }
 
         @Override
         public boolean hasNext() {
@@ -726,21 +729,21 @@ public final class PersistentTreeMapSlow<K extends Comparable<K>, V>
     private final class EntryIterator extends TreeIterator<Map.Entry<K, V>> {
         @Override
         void fillElements() {
-        inorder(root, elements);
+        inorder(root, super.getElements());
         }
     }
 
     private final class KeyIterator extends TreeIterator<K> {
         @Override
         void fillElements() {
-        inorderKeys(root, elements);
+        inorderKeys(root, super.getElements());
         }
     }
 
     private final class ValueIterator extends TreeIterator<V> {
         @Override
         void fillElements() {
-        inorderValues(root, elements);
+        inorderValues(root, super.getElements());
         }
     }
 

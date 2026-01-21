@@ -15,7 +15,6 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
-import java.util.NoSuchElementException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -197,7 +196,7 @@ class PersistentDoublyLinkedListFatTest {
         Iterator<Integer> iterator = list.iterator();
         iterator.next();
         assertThrows(UnsupportedOperationException.class, iterator::remove);
-        
+
         // Проверяем ListIterator
         ListIterator<Integer> listIterator = list.listIterator();
         listIterator.next();
@@ -407,14 +406,14 @@ class PersistentDoublyLinkedListFatTest {
     @Test
     @DisplayName("Test indexOf and lastIndexOf")
     void testIndexOf() {
-        PersistentDoublyLinkedListFat<Integer> list = 
+        PersistentDoublyLinkedListFat<Integer> list =
             emptyList.addFirstInternal(1).addLastInternal(2).addLastInternal(3).addLastInternal(2).addLastInternal(1);
-        
+
         assertEquals(0, list.indexOf(1));
         assertEquals(1, list.indexOf(2));
         assertEquals(2, list.indexOf(3));
         assertEquals(-1, list.indexOf(4));
-        
+
         assertEquals(4, list.lastIndexOf(1));
         assertEquals(3, list.lastIndexOf(2));
         assertEquals(2, list.lastIndexOf(3));
@@ -425,17 +424,17 @@ class PersistentDoublyLinkedListFatTest {
     @DisplayName("Test ListIterator")
     void testListIterator() {
         ListIterator<Integer> iterator = listWithElements.listIterator();
-        
+
         assertTrue(iterator.hasNext());
         assertFalse(iterator.hasPrevious());
         assertEquals(0, iterator.nextIndex());
         assertEquals(-1, iterator.previousIndex());
-        
+
         assertEquals(Integer.valueOf(1), iterator.next());
         assertEquals(1, iterator.nextIndex());
         assertEquals(0, iterator.previousIndex());
         assertTrue(iterator.hasPrevious());
-        
+
         assertEquals(Integer.valueOf(2), iterator.next());
         assertEquals(Integer.valueOf(3), iterator.next());
         assertFalse(iterator.hasNext());
@@ -445,11 +444,11 @@ class PersistentDoublyLinkedListFatTest {
     @DisplayName("Test ListIterator with index")
     void testListIteratorWithIndex() {
         ListIterator<Integer> iterator = listWithElements.listIterator(1);
-        
+
         assertTrue(iterator.hasNext());
         assertEquals(1, iterator.nextIndex());
         assertEquals(0, iterator.previousIndex());
-        
+
         assertEquals(Integer.valueOf(2), iterator.next());
         assertEquals(Integer.valueOf(3), iterator.next());
         assertFalse(iterator.hasNext());
@@ -460,11 +459,11 @@ class PersistentDoublyLinkedListFatTest {
     void testSubList() {
         PersistentDoublyLinkedListFat<Integer> list = 
             emptyList.addFirstInternal(1).addLastInternal(2).addLastInternal(3).addLastInternal(4).addLastInternal(5);
-        
+
         List<Integer> subList = list.subList(1, 4);
         assertEquals(3, subList.size());
         assertEquals(List.of(2, 3, 4), subList);
-        
+
         // Empty sublist
         List<Integer> emptySubList = list.subList(2, 2);
         assertTrue(emptySubList.isEmpty());
@@ -473,9 +472,9 @@ class PersistentDoublyLinkedListFatTest {
     @Test
     @DisplayName("Test subList invalid indices")
     void testSubListInvalidIndices() {
-        PersistentDoublyLinkedListFat<Integer> list = 
+        PersistentDoublyLinkedListFat<Integer> list =
             emptyList.addFirstInternal(1).addLastInternal(2).addLastInternal(3);
-        
+
         assertThrows(IndexOutOfBoundsException.class, () -> list.subList(-1, 2));
         assertThrows(IndexOutOfBoundsException.class, () -> list.subList(0, 4));
         assertThrows(IndexOutOfBoundsException.class, () -> list.subList(2, 1));

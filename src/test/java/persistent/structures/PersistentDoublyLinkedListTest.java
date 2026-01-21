@@ -26,7 +26,7 @@ import org.junit.jupiter.params.provider.ValueSource;
  * Comprehensive tests for PersistentDoublyLinkedList and
  * TransactionalPersistentDoublyLinkedList.
  */
-@SuppressWarnings({"MagicNumber"})
+@SuppressWarnings({"MagicNumber", "LineLength"})
 @DisplayName("Persistent Doubly Linked List Tests")
 class PersistentDoublyLinkedListTest {
 

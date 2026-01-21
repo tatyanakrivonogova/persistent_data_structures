@@ -347,7 +347,10 @@ public final class TransactionalPersistentDoublyLinkedList<E extends
    */
   private class TransactionalListIterator implements ListIterator<E> {
 
+    /** Current cursor position. */
     private int cursor;
+
+    /** Index of last returned element, or -1 if none. */
     private int lastRet = -1;
 
     TransactionalListIterator(final int index) {

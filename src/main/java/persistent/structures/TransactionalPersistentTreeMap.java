@@ -1,11 +1,8 @@
 package persistent.structures;
 
-import java.util.AbstractMap;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
@@ -119,7 +116,7 @@ public final class TransactionalPersistentTreeMap<K extends Comparable<K>, V>
     if (key == null) {
       return null; // Don't allow null keys
     }
-    
+
     V oldValue = get(key);
     modify(map -> map.putInternal(key, value));
     return oldValue;
@@ -133,7 +130,7 @@ public final class TransactionalPersistentTreeMap<K extends Comparable<K>, V>
       if (k == null) {
         return null; // Can't remove null key
       }
-      
+
       V oldValue = get(k);
       modify(map -> map.removeInternal(k));
       return oldValue;
@@ -307,7 +304,8 @@ public final class TransactionalPersistentTreeMap<K extends Comparable<K>, V>
       Map.Entry<?, ?> entry = (Map.Entry<?, ?>) o;
       V value = TransactionalPersistentTreeMap.this.get(entry.getKey());
       if (Objects.equals(value, entry.getValue())) {
-        return TransactionalPersistentTreeMap.this.remove(entry.getKey()) != null;
+        return TransactionalPersistentTreeMap.this.remove(entry.getKey())
+          != null;
       }
       return false;
     }
@@ -391,7 +389,14 @@ public final class TransactionalPersistentTreeMap<K extends Comparable<K>, V>
   // ========== EntryIterator ==========
 
   private final class EntryIterator implements Iterator<Map.Entry<K, V>> {
+    /**
+     * Iterator over a snapshot of the map entries.
+     */
     private final Iterator<Map.Entry<K, V>> snapshotIterator;
+
+    /**
+     * The last entry returned by the iterator.
+     */
     private Map.Entry<K, V> lastReturned;
 
     EntryIterator() {

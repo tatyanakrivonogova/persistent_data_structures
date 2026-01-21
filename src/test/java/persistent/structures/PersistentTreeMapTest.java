@@ -13,9 +13,6 @@ import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.ConcurrentModificationException;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -26,7 +23,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /** Comprehensive test suite for PersistentTreeMap. */
-@SuppressWarnings({"MagicNumber"})
+@SuppressWarnings({"MagicNumber", "LineLength"})
 class PersistentTreeMapTest {
 
   /** Empty map for testing. */
@@ -599,7 +596,7 @@ class PersistentTreeMapTest {
 
   // ========== Helper Methods ==========
 
-  private void assertNotNull(Object obj) {
+  private void assertNotNull(final Object obj) {
     assertTrue(obj != null);
   }
 }

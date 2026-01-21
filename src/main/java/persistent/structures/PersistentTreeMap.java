@@ -3,7 +3,6 @@ package persistent.structures;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -21,6 +20,7 @@ import persistent.core.Version;
  * @param <K> the type of keys, must be Comparable
  * @param <V> the type of values
  */
+@SuppressWarnings({"LineLength"})
 public final class PersistentTreeMap<K extends Comparable<K>, V>
     implements PersistentStructure<Map.Entry<K, V>>, Map<K, V> {
 
@@ -836,7 +836,7 @@ public final class PersistentTreeMap<K extends Comparable<K>, V>
 
   private abstract class TreeIterator<E> implements Iterator<E> {
     /** The entries in order. */
-    protected final List<E> elements; // Изменено с private на protected
+    private final List<E> elements;
     /** The current index in the iteration. */
     private int currentIndex;
 
@@ -848,6 +848,10 @@ public final class PersistentTreeMap<K extends Comparable<K>, V>
     }
 
     abstract void fillElements();
+
+    protected List<E> getElements() {
+      return elements;
+    }
 
     @Override
     public boolean hasNext() {
@@ -872,21 +876,21 @@ public final class PersistentTreeMap<K extends Comparable<K>, V>
   private final class EntryIterator extends TreeIterator<Map.Entry<K, V>> {
     @Override
     void fillElements() {
-      inOrderTraversal(root, elements);
+      inOrderTraversal(root, super.getElements());
     }
   }
 
   private final class KeyIterator extends TreeIterator<K> {
     @Override
     void fillElements() {
-      inOrderTraversalKeys(root, elements);
+      inOrderTraversalKeys(root, super.getElements());
     }
   }
 
   private final class ValueIterator extends TreeIterator<V> {
     @Override
     void fillElements() {
-      inOrderTraversalValues(root, elements);
+      inOrderTraversalValues(root, super.getElements());
     }
   }
 

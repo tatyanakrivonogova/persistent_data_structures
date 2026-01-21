@@ -356,7 +356,7 @@ public final class TransactionalPersistentDoublyLinkedListFat<E extends
 
         /** Current cursor position. */
         private int cursor;
-        
+
         /** Index of last returned element, or -1 if none. */
         private int lastRet = -1;
 
